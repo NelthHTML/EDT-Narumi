@@ -1158,13 +1158,18 @@ function render(){
         const t=types.find(x=>x.id===e.type)||null;
         const bg=t?t.color:'rgba(255,255,255,.09)';
         const fg=t?autoText(t.color):'#f0ede8';
+        const isCancelled=!!(e.cancelled);
         btn.className=isAdmin?'cell-btn editable draggable-cell':'cell-btn';
         if(isAdmin)btn.addEventListener('mousedown',ev=>startDrag(ev,key,e,bg,fg));
-        const inner=document.createElement('div');inner.className='cell-inner';inner.style.background=bg;
-        let html=`<div class="cname" style="color:${fg}">${e.name}</div>`;
-        if(e.sensei)html+=`<div class="csensei" style="color:${fg}">${e.sensei}</div>`;
-        if(e.classe)html+=`<div class="csensei" style="color:${fg};opacity:.6">${e.location==='ext'?'🌿':'🏛️'} ${e.classe}</div>`;
-        if(e.xp)html+=`<div class="cxp" style="color:${fg}">⭐ ${e.xp} XP</div>`;
+        const inner=document.createElement('div');
+        inner.className=isCancelled?'cell-inner cancelled':'cell-inner';
+        if(!isCancelled)inner.style.background=bg;
+        const nameFg=isCancelled?'#ffaaaa':fg;
+        let html=`<div class="cname" style="color:${nameFg}">${isCancelled?`🚫 <s style="opacity:.7">${e.name}</s>`:e.name}</div>`;
+        if(e.sensei)html+=`<div class="csensei" style="color:${nameFg}">${e.sensei}</div>`;
+        if(e.classe)html+=`<div class="csensei" style="color:${nameFg};opacity:.6">${e.location==='ext'?'🌿':'🏛️'} ${e.classe}</div>`;
+        if(isCancelled&&e.cancelReason)html+=`<div class="ccancel-label">⚠️ ${e.cancelReason}</div>`;
+        if(!isCancelled&&e.xp)html+=`<div class="cxp" style="color:${fg}">⭐ ${e.xp} XP</div>`;
         inner.innerHTML=html;btn.appendChild(inner);
         if(isAdmin){
           const handle=document.createElement('div');handle.className='drag-handle';handle.textContent='⠿';
@@ -1422,19 +1427,32 @@ function openLoginOverlay(){
   document.getElementById('loginPwd').value='';
   document.getElementById('loginErr').textContent='';
   document.getElementById('loginOverlay').classList.add('open');
-  const focusTarget=cloudEnabled?document.getElementById('loginEmail'):document.getElementById('loginPwd');
-  setTimeout(()=>focusTarget.focus(),50);
+  setTimeout(()=>document.getElementById('loginPwd').focus(),50);
 }
+// Le mot de passe local accorde toujours l'acces admin (drag & drop) meme en mode cloud.
 async function doLogin(){
   const err=document.getElementById('loginErr');
   const pwd=document.getElementById('loginPwd').value;
+  if(pwd===adminPwd){
+    isAdmin=true;
+    closeLoginOverlay();
+    updateAuthUI();
+    render();
+    showToast("🍃 Bienvenue, Sensei !");
+    return;
+  }
   if(cloudEnabled){
     const email=document.getElementById('loginEmail').value.trim();
     if(!email||!pwd){err.textContent="Renseigne l'email et le mot de passe.";return;}
     try{
       const creds=await cloudAuth.signInWithEmailAndPassword(email,pwd);
+      if(normalizeEmail(creds.user.email)!==normalizeEmail(CLOUD_CONFIG.adminEmail)){
+        await cloudAuth.signOut();
+        err.textContent="Ce compte n'a pas l'acces admin.";
+        return;
+      }
       closeLoginOverlay();
-      showToast("ðŸƒ Bienvenue, Sensei !");
+      showToast("🍃 Bienvenue, Sensei !");
     }catch(e){
       err.textContent=authErrorMessage(e);
       document.getElementById('loginPwd').value='';
@@ -1442,27 +1460,15 @@ async function doLogin(){
     }
     return;
   }
-  if(pwd===adminPwd){
-    isAdmin=true;
-    closeLoginOverlay();
-    updateAuthUI();
-    render();
-    showToast("Bienvenue, Sensei !");
-  }else{
-    err.textContent="Mot de passe incorrect.";
-    document.getElementById('loginPwd').value='';
-    document.getElementById('loginPwd').focus();
-  }
+  err.textContent="Mot de passe incorrect.";
+  document.getElementById('loginPwd').value='';
+  document.getElementById('loginPwd').focus();
 }
 async function logout(){
-  if(cloudEnabled&&cloudAuth){
-    await cloudAuth.signOut();
-  }else{
-    isAdmin=false;
-    updateAuthUI();
-    render();
-  }
-  showToast("Déconnecté.");
+  isAdmin=false;
+  if(cloudEnabled&&cloudAuth){await cloudAuth.signOut();}
+  updateAuthUI();render();
+  showToast("🔒 Déconnecté.");
 }
 async function changePwd(){
   const cur=document.getElementById('pwdCurrent').value;
@@ -2358,7 +2364,7 @@ load();
             const bg=course.cancelled?'rgba(92,17,17,.7)':(type?type.color:'rgba(255,255,255,.09)');
             const fg=course.cancelled?'#ffffff':(type?autoText(type.color):'#f0ede8');
             const btn=document.createElement('button');
-            btn.className='course-card'+(course.cancelled?' cancelled':'');
+            btn.className='course-card'+(course.cancelled?' cancelled':'')+(isAdmin?' draggable-cell':'');
             const regCount=courseRegistrations(course.id).length;
             const inner=document.createElement('div');
             inner.className='cell-inner'+(course.cancelled?' cancelled':'');
@@ -2367,13 +2373,21 @@ load();
             if(course.sensei)html+='<div class="csensei" style="color:'+fg+'">'+escapeHtml(course.sensei)+'</div>';
             if(course.classe)html+='<div class="csensei" style="color:'+fg+';opacity:.7">'+(course.location==='ext'?'🌿':'🏛️')+' '+escapeHtml(course.classe)+'</div>';
             if(course.cancelled){
-              html+='<div class="ccancel-label">Cours annule'+(course.cancelReason?' • '+escapeHtml(course.cancelReason):'')+'</div>';
+              html+='<div class="ccancel-label">Cours annulé'+(course.cancelReason?' • '+escapeHtml(course.cancelReason):'')+'</div>';
             }else if(regCount){
               html+='<div class="course-signups" style="color:'+fg+'">'+regCount+' inscrit(s)</div>';
             }
             inner.innerHTML=html;
             btn.appendChild(inner);
+            if(isAdmin){
+              const handle=document.createElement('div');
+              handle.className='drag-handle';
+              handle.textContent='⠿';
+              btn.appendChild(handle);
+              btn.addEventListener('mousedown',function(ev){startDrag(ev,key,course,bg,fg);});
+            }
             btn.addEventListener('click',function(){
+              if(drag.didDrag)return;
               if(isAdmin)openModal(key,course,course.id);
               else openViewModal(key,course.id);
             });
@@ -2390,11 +2404,26 @@ load();
         }else if(isAdmin){
           const btn=document.createElement('button');
           btn.className='cell-btn editable';
-          btn.innerHTML='<div class="add-hint">✦ Ajouter</div>';
-          btn.addEventListener('click',function(){openModal(key,null,null);});
+          btn.innerHTML='<div class="add-hint">'+(clipboard?'📌 Coller':'✦ Ajouter')+'</div>';
+          btn.addEventListener('click',function(){
+            if(drag.didDrag)return;
+            if(clipboard){schedData[key]=JSON.parse(JSON.stringify(clipboard));clipboard=null;render();saveAll();showToast('📌 Cours collé !');}
+            else{openModal(key,null,null);}
+          });
           td.appendChild(btn);
         }else{
           td.innerHTML='<div class="cell-btn"></div>';
+        }
+        if(isAdmin){
+          td.dataset.key=key;
+          td.addEventListener('mouseenter',onCellEnter);
+          td.addEventListener('mouseleave',onCellLeave);
+          td.addEventListener('contextmenu',function(ev){
+            ev.preventDefault();
+            var hasCourses=courses.length>0;
+            if(!hasCourses&&!clipboard)return;
+            showCtxMenu(ev.clientX,ev.clientY,key,hasCourses,courses[0]||null);
+          });
         }
         tr.appendChild(td);
       });
