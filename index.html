@@ -208,6 +208,14 @@ td.paste-ready:hover{outline-color:var(--blue);background:rgba(133,183,235,.08)}
 }
 .cell-inner.cancelled::before{background:rgba(255,85,85,.5)}
 
+/* Completed cell */
+.cell-inner.completed{
+  background:linear-gradient(135deg,#0d1f12,#142818) !important;
+  border:1px solid rgba(110,231,183,.2);
+  opacity:.8;
+}
+.cell-inner.completed::before{background:rgba(110,231,183,.35)}
+
 .cname{font-size:11px;font-weight:700;line-height:1.3;letter-spacing:.3px}
 .csensei{font-size:10px;opacity:.72;margin-top:2px}
 .ccancel-label{
@@ -498,6 +506,8 @@ td.paste-ready:hover{outline-color:var(--blue);background:rgba(133,183,235,.08)}
 .ctx-item.danger:hover{background:var(--bg-danger);color:var(--red2)}
 .ctx-item.restore{color:#6ee7b7}
 .ctx-item.restore:hover{background:rgba(110,231,183,.1);color:#6ee7b7}
+.ctx-item.done{color:#6ee7b7}
+.ctx-item.done:hover{background:rgba(110,231,183,.1);color:#6ee7b7}
 .ctx-sep{border:none;border-top:1px solid var(--border2);margin:4px 0}
 
 /* ── TOAST ───────────────────────────────────────────────── */
@@ -830,7 +840,9 @@ td.paste-ready:hover{outline-color:var(--blue);background:rgba(133,183,235,.08)}
   <div class="ctx-item" id="ctxCopy">📋 Copier le cours</div>
   <div class="ctx-item" id="ctxEdit">✏️ Modifier</div>
   <div class="ctx-item danger" id="ctxCancelCourse">🚫 Annuler le cours</div>
+  <div class="ctx-item done" id="ctxComplete">✅ Cours terminé</div>
   <div class="ctx-item restore" id="ctxRestore">✓ Rétablir le cours</div>
+  <div class="ctx-item restore" id="ctxRestoreComplete">↩️ Remettre le cours</div>
   <hr class="ctx-sep" id="ctxSep1">
   <div class="ctx-item" id="ctxPaste">📌 Coller ici</div>
   <div class="ctx-item" id="ctxNew">➕ Nouveau cours</div>
@@ -1263,18 +1275,32 @@ function renderLegend(){
 // ── CONTEXT MENU ─────────────────────────────────────────────
 const ctxMenu=document.getElementById('ctxMenu');
 
+// Returns the mutable raw course object from schedData, works for array or object storage
+function getRawCourse(key,entry){
+  const raw=schedData[key];
+  if(!raw)return null;
+  if(Array.isArray(raw)){
+    if(entry&&entry.id)return raw.find(function(c){return c&&c.id===entry.id;})||raw[0]||null;
+    return raw[0]||null;
+  }
+  return(typeof raw==='object'&&raw.name)?raw:null;
+}
 function showCtxMenu(x,y,key,hasEntry,entry){
-  ctxKey=key;
+  ctxKey=key;ctxEntry=entry;
   const isCancelled=hasEntry&&entry&&entry.cancelled;
+  const isCompleted=hasEntry&&entry&&entry.completed;
+  const isNormal=hasEntry&&!isCancelled&&!isCompleted;
   const show=id=>document.getElementById(id).style.display='flex';
   const hide=id=>document.getElementById(id).style.display='none';
 
-  // Copy / Edit — seulement si non annulé
-  hasEntry&&!isCancelled?show('ctxCopy'):hide('ctxCopy');
-  hasEntry&&!isCancelled?show('ctxEdit'):hide('ctxEdit');
-  // Annuler / Rétablir
-  hasEntry&&!isCancelled?show('ctxCancelCourse'):hide('ctxCancelCourse');
+  // Copy / Edit — seulement si normal
+  isNormal?show('ctxCopy'):hide('ctxCopy');
+  isNormal?show('ctxEdit'):hide('ctxEdit');
+  // Annuler / Terminer / Rétablir
+  isNormal?show('ctxCancelCourse'):hide('ctxCancelCourse');
+  isNormal?show('ctxComplete'):hide('ctxComplete');
   isCancelled?show('ctxRestore'):hide('ctxRestore');
+  isCompleted?show('ctxRestoreComplete'):hide('ctxRestoreComplete');
   // Paste / New
   clipboard?show('ctxPaste'):hide('ctxPaste');
   (!hasEntry&&clipboard)?show('ctxNew'):hide('ctxNew');
@@ -1291,7 +1317,7 @@ function showCtxMenu(x,y,key,hasEntry,entry){
     if(r.bottom>window.innerHeight)ctxMenu.style.top=(y-r.height)+'px';
   });
 }
-function hideCtxMenu(){ctxMenu.style.display='none';ctxKey=null;}
+function hideCtxMenu(){ctxMenu.style.display='none';ctxKey=null;ctxEntry=null;}
 
 document.getElementById('ctxCopy').addEventListener('click',()=>{
   if(!ctxKey||!schedData[ctxKey])return hideCtxMenu();
@@ -1308,9 +1334,22 @@ document.getElementById('ctxCancelCourse').addEventListener('click',()=>{
   const k=ctxKey;hideCtxMenu();openCancelOverlay(k);
 });
 document.getElementById('ctxRestore').addEventListener('click',()=>{
-  if(!ctxKey||!schedData[ctxKey])return hideCtxMenu();
-  delete schedData[ctxKey].cancelled;delete schedData[ctxKey].cancelReason;
+  const raw=getRawCourse(ctxKey,ctxEntry);
+  if(!raw)return hideCtxMenu();
+  delete raw.cancelled;delete raw.cancelReason;
   render();saveAll();showToast('✓ Cours rétabli !');hideCtxMenu();
+});
+document.getElementById('ctxComplete').addEventListener('click',()=>{
+  const raw=getRawCourse(ctxKey,ctxEntry);
+  if(!raw)return hideCtxMenu();
+  raw.completed=true;
+  render();saveAll();showToast('✅ Cours marqué comme terminé !');hideCtxMenu();
+});
+document.getElementById('ctxRestoreComplete').addEventListener('click',()=>{
+  const raw=getRawCourse(ctxKey,ctxEntry);
+  if(!raw)return hideCtxMenu();
+  delete raw.completed;
+  render();saveAll();showToast('↩ Cours remis !');hideCtxMenu();
 });
 document.getElementById('ctxPaste').addEventListener('click',()=>{
   if(!ctxKey||!clipboard)return hideCtxMenu();
@@ -1341,8 +1380,8 @@ function closeCancelOverlay(){
 function confirmCancel(){
   if(!cancelTargetKey||!schedData[cancelTargetKey])return closeCancelOverlay();
   const reason=document.getElementById('cancelReason').value.trim();
-  schedData[cancelTargetKey].cancelled=true;
-  schedData[cancelTargetKey].cancelReason=reason||'';
+  const rawC=getRawCourse(cancelTargetKey,null);
+  if(rawC){rawC.cancelled=true;rawC.cancelReason=reason||'';}
   closeCancelOverlay();render();saveAll();
   showToast('🚫 Cours annulé.');
 }
@@ -1630,7 +1669,8 @@ function saveCell(){
     sensei:document.getElementById('mSensei').value.trim(),
     classe:document.getElementById('mClasse').value.trim(),
     type:document.getElementById('mType').value,
-    ...(prev.cancelled?{cancelled:prev.cancelled,cancelReason:prev.cancelReason}:{})
+    ...(prev.cancelled?{cancelled:prev.cancelled,cancelReason:prev.cancelReason}:{}),
+    ...(prev.completed?{completed:true}:{})
   };
   closeModal();render();saveAll();
 }
@@ -1822,7 +1862,8 @@ load();
       location:raw.location==='ext'?'ext':'room',
       type:String(raw.type||''),
       cancelled:!!raw.cancelled,
-      cancelReason:String(raw.cancelReason||'').trim()
+      cancelReason:String(raw.cancelReason||'').trim(),
+      completed:!!raw.completed
     };
   }
   function scheduleNeedsIds(raw){
@@ -2361,19 +2402,23 @@ load();
           stack.className='cell-stack';
           courses.forEach(function(course){
             const type=courseType(course);
-            const bg=course.cancelled?'rgba(92,17,17,.7)':(type?type.color:'rgba(255,255,255,.09)');
-            const fg=course.cancelled?'#ffffff':(type?autoText(type.color):'#f0ede8');
+            const bg=course.cancelled?'rgba(92,17,17,.7)':course.completed?'rgba(20,40,24,.8)':(type?type.color:'rgba(255,255,255,.09)');
+            const fg=course.cancelled?'#ffaaaa':course.completed?'#6ee7b7':(type?autoText(type.color):'#f0ede8');
             const btn=document.createElement('button');
-            btn.className='course-card'+(course.cancelled?' cancelled':'')+(isAdmin?' draggable-cell':'');
+            btn.className='course-card'+(course.cancelled?' cancelled':'')+(course.completed?' completed':'')+(isAdmin?' draggable-cell':'');
             const regCount=courseRegistrations(course.id).length;
             const inner=document.createElement('div');
-            inner.className='cell-inner'+(course.cancelled?' cancelled':'');
-            if(!course.cancelled)inner.style.background=bg;
-            let html='<div class="cname" style="color:'+fg+'">'+escapeHtml(course.name)+'</div>';
+            inner.className='cell-inner'+(course.cancelled?' cancelled':course.completed?' completed':'');
+            if(!course.cancelled&&!course.completed)inner.style.background=bg;
+            const namePrefix=course.cancelled?'🚫 ':course.completed?'✅ ':'';
+            const nameHtml=course.cancelled?'<s style="opacity:.7">'+escapeHtml(course.name)+'</s>':escapeHtml(course.name);
+            let html='<div class="cname" style="color:'+fg+'">'+namePrefix+nameHtml+'</div>';
             if(course.sensei)html+='<div class="csensei" style="color:'+fg+'">'+escapeHtml(course.sensei)+'</div>';
             if(course.classe)html+='<div class="csensei" style="color:'+fg+';opacity:.7">'+(course.location==='ext'?'🌿':'🏛️')+' '+escapeHtml(course.classe)+'</div>';
             if(course.cancelled){
               html+='<div class="ccancel-label">Cours annulé'+(course.cancelReason?' • '+escapeHtml(course.cancelReason):'')+'</div>';
+            }else if(course.completed){
+              html+='<div class="ccancel-label" style="color:#6ee7b7">✔️ Terminé</div>';
             }else if(regCount){
               html+='<div class="course-signups" style="color:'+fg+'">'+regCount+' inscrit(s)</div>';
             }
