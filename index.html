@@ -122,6 +122,19 @@ body::after{
   box-shadow:0 0 14px rgba(245,200,66,.14);
 }
 
+/* ── STATS BAR ───────────────────────────────────────────── */
+.stats-bar{display:flex;gap:10px;margin-bottom:.75rem;flex-wrap:wrap}
+.stat-card{
+  background:var(--navy2);border:1px solid var(--border2);
+  border-radius:var(--radius);padding:10px 16px;
+  display:flex;align-items:center;gap:11px;flex:1;min-width:130px;
+  transition:border-color .15s;
+}
+.stat-card:hover{border-color:var(--border)}
+.stat-icon{font-size:22px;line-height:1}
+.stat-val{font-size:20px;font-weight:700;color:var(--gold);line-height:1;font-family:'Cinzel',serif}
+.stat-lbl{font-size:10px;color:var(--text2);font-weight:700;letter-spacing:.5px;text-transform:uppercase;margin-top:2px}
+
 /* ── GRID ────────────────────────────────────────────────── */
 .grid-wrap{
   border-radius:var(--radius-lg);border:1px solid var(--border);
@@ -535,6 +548,7 @@ td.paste-ready:hover{outline-color:var(--blue);background:rgba(133,183,235,.08)}
 
   <!-- SCHEDULE TAB -->
   <div id="tabSchedule">
+    <div class="stats-bar" id="statsBar" style="display:none"></div>
     <div class="grid-wrap">
       <table>
         <thead>
@@ -732,6 +746,20 @@ function saveAll(){
   persist('week',week);showToast("✦ Parchemin sauvegardé !");
 }
 
+// ── STATS ────────────────────────────────────────────────────
+function renderStats(){
+  const bar=document.getElementById('statsBar');
+  if(!isAdmin){bar.style.display='none';return;}
+  bar.style.display='flex';
+  const wkE=Object.entries(schedData).filter(([k])=>k.startsWith('w'+week+'_')).map(([,v])=>v).filter(Boolean);
+  const totalXP=wkE.reduce((a,e)=>a+(+e.xp||0),0);
+  const totalMax=wkE.reduce((a,e)=>a+(+e.maxStudents||0),0);
+  bar.innerHTML=`
+    <div class="stat-card"><span class="stat-icon">📅</span><div><div class="stat-val">${wkE.length}</div><div class="stat-lbl">Cours semaine</div></div></div>
+    <div class="stat-card"><span class="stat-icon">📚</span><div><div class="stat-val">${Object.values(schedData).filter(Boolean).length}</div><div class="stat-lbl">Total global</div></div></div>
+  `;
+}
+
 // ── UI HELPERS ───────────────────────────────────────────────
 function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2000);}
 function updateWkLabel(){document.getElementById('wkLabel').textContent='Semaine '+week;}
@@ -764,6 +792,7 @@ function switchTab(name){
   });
   if(name==='slots')renderSlotList();
   if(name==='types')renderTypeList();
+  if(name==='schedule')renderStats();
 }
 
 function getKey(si,di){return`w${week}_s${si}_d${di}`;}
@@ -774,7 +803,6 @@ function render(){
   slots.forEach((slot,si)=>{
     const tr=document.createElement('tr');
     const tdT=document.createElement('td');tdT.innerHTML=slotShort(slot);tr.appendChild(tdT);
-
     DAYS.forEach((_,di)=>{
       const td=document.createElement('td');
       if(WEEKEND_IDX.includes(di))td.classList.add('weekend-col');
@@ -782,25 +810,17 @@ function render(){
       const btn=document.createElement('button');
 
       if(e&&e.name){
-        const isCancelled=!!e.cancelled;
         const t=types.find(x=>x.id===e.type)||null;
-        const bg=isCancelled?'transparent':(t?t.color:'rgba(255,255,255,.09)');
-        const fg=isCancelled?'#ffaaaa':(t?autoText(t.color):'#f0ede8');
-
+        const bg=t?t.color:'rgba(255,255,255,.09)';
+        const fg=t?autoText(t.color):'#f0ede8';
         btn.className=isAdmin?'cell-btn editable draggable-cell':'cell-btn';
-        if(isAdmin)btn.addEventListener('mousedown',ev=>startDrag(ev,key,e,isCancelled?'#5c1111':bg,fg));
-
-        const inner=document.createElement('div');
-        inner.className='cell-inner'+(isCancelled?' cancelled':'');
-        if(!isCancelled)inner.style.background=bg;
-
-        let html=`<div class="cname" style="color:${fg}">${isCancelled?`🚫 <s style="opacity:.7">${e.name}</s>`:e.name}</div>`;
-        if(e.sensei&&!isCancelled)html+=`<div class="csensei" style="color:${fg}">${e.sensei}</div>`;
-        if(e.classe&&!isCancelled)html+=`<div class="csensei" style="color:${fg};opacity:.55">📍 ${e.classe}</div>`;
-        if(isCancelled)html+=`<div class="ccancel-label">ANNULÉ${e.cancelReason?` — ${e.cancelReason}`:''}</div>`;
-        inner.innerHTML=html;
-        btn.appendChild(inner);
-
+        if(isAdmin)btn.addEventListener('mousedown',ev=>startDrag(ev,key,e,bg,fg));
+        const inner=document.createElement('div');inner.className='cell-inner';inner.style.background=bg;
+        let html=`<div class="cname" style="color:${fg}">${e.name}</div>`;
+        if(e.sensei)html+=`<div class="csensei" style="color:${fg}">${e.sensei}</div>`;
+        if(e.classe)html+=`<div class="csensei" style="color:${fg};opacity:.6">${e.location==='ext'?'🌿':'🏛️'} ${e.classe}</div>`;
+        if(e.xp)html+=`<div class="cxp" style="color:${fg}">⭐ ${e.xp} XP</div>`;
+        inner.innerHTML=html;btn.appendChild(inner);
         if(isAdmin){
           const handle=document.createElement('div');handle.className='drag-handle';handle.textContent='⠿';
           btn.appendChild(handle);
@@ -815,7 +835,8 @@ function render(){
             if(clipboard){
               if(ev.shiftKey){clipboard=null;render();openModal(key,null);return;}
               schedData[key]=JSON.parse(JSON.stringify(clipboard));
-              clipboard=null;render();saveAll();showToast('📌 Cours collé !');
+              clipboard=null;render();saveAll();
+              showToast('📌 Cours collé !');
             } else {
               openModal(key,null);
             }
@@ -831,14 +852,14 @@ function render(){
           ev.preventDefault();
           const hasEntry=!!(e&&e.name);
           if(!hasEntry&&!clipboard)return;
-          showCtxMenu(ev.clientX,ev.clientY,key,hasEntry,e);
+          showCtxMenu(ev.clientX,ev.clientY,key,hasEntry);
         });
       }
       td.appendChild(btn);tr.appendChild(td);
     });
     tbody.appendChild(tr);
   });
-  renderLegend();
+  renderLegend();renderStats();
 }
 
 // ── DRAG ─────────────────────────────────────────────────────
