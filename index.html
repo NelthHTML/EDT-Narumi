@@ -97,7 +97,7 @@ body::after{
 .week-btn:hover{background:rgba(245,200,66,.18);box-shadow:0 0 12px rgba(245,200,66,.2)}
 .week-label{font-size:12px;color:var(--blue);min-width:92px;text-align:center;font-weight:700;letter-spacing:.5px}
 
-.admin-badge,.viewer-badge,.sync-badge{
+.admin-badge,.viewer-badge,.sync-badge,.presence-badge{
   display:flex;align-items:center;gap:6px;border-radius:8px;
   padding:5px 14px;cursor:pointer;font-size:11px;
   font-weight:700;letter-spacing:.5px;transition:all .15s;white-space:nowrap;
@@ -111,6 +111,9 @@ body::after{
 .sync-badge.online{background:rgba(159,225,203,.08);border:1px solid rgba(159,225,203,.28);color:#9fe1cb}
 .sync-badge.sync{background:rgba(245,200,66,.11);border:1px solid rgba(245,200,66,.38);color:var(--gold)}
 .sync-badge.error{background:rgba(255,85,85,.1);border:1px solid rgba(255,85,85,.3);color:#ff9b9b}
+.presence-badge{cursor:default}
+.presence-badge.local{background:rgba(133,183,235,.07);border:1px solid rgba(133,183,235,.2);color:var(--blue)}
+.presence-badge.online{background:rgba(159,225,203,.08);border:1px solid rgba(159,225,203,.28);color:#9fe1cb}
 
 /* ── TABS ────────────────────────────────────────────────── */
 .tabs{display:flex;gap:6px;margin-bottom:.75rem;flex-wrap:wrap}
@@ -687,6 +690,55 @@ td.paste-ready:hover{outline-color:var(--blue);background:rgba(133,183,235,.08)}
 .profile-stat span{
   font-size:10px;color:var(--text2);text-transform:uppercase;letter-spacing:.5px;
 }
+.stats-sections{
+  display:flex;flex-direction:column;gap:14px;
+}
+.breakdown-grid{
+  display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;
+}
+.breakdown-card{
+  border:1px solid var(--border2);border-radius:14px;padding:14px;
+  background:linear-gradient(180deg,var(--navy3),var(--navy2));
+  box-shadow:var(--shadow);
+}
+.breakdown-head{
+  display:flex;align-items:flex-start;justify-content:space-between;gap:10px;
+}
+.breakdown-title{
+  font-family:'Cinzel',serif;font-size:14px;font-weight:700;color:var(--gold);
+}
+.breakdown-sub{
+  margin-top:4px;font-size:11px;color:var(--text2);line-height:1.4;
+}
+.breakdown-total{
+  min-width:56px;padding:8px 10px;border-radius:12px;border:1px solid var(--border3);
+  background:rgba(245,200,66,.08);text-align:center;color:var(--gold);
+}
+.breakdown-total strong{
+  display:block;font-size:18px;line-height:1;font-family:'Cinzel',serif;
+}
+.breakdown-total span{
+  display:block;margin-top:4px;font-size:9px;letter-spacing:.5px;text-transform:uppercase;
+}
+.breakdown-chips{
+  display:flex;flex-wrap:wrap;gap:7px;margin-top:12px;
+}
+.breakdown-chip{
+  display:inline-flex;align-items:center;gap:6px;padding:6px 9px;border-radius:999px;
+  font-size:11px;font-weight:700;border:1px solid rgba(255,255,255,.08);
+}
+.section-title{
+  font-family:'Cinzel',serif;font-size:14px;color:var(--gold);font-weight:700;
+}
+.section-note{
+  margin-top:4px;font-size:12px;color:var(--text2);line-height:1.45;
+}
+.panel-empty{
+  font-size:12px;color:var(--text2);padding:6px 0;
+}
+.profile-types{
+  margin-top:12px;
+}
 .hex-input{
   width:92px !important;text-transform:uppercase;letter-spacing:.4px;
 }
@@ -756,6 +808,7 @@ td.paste-ready:hover{outline-color:var(--blue);background:rgba(133,183,235,.08)}
         <span>Demandes</span>
         <span class="request-count" id="requestCount">0</span>
       </button>
+      <div class="presence-badge local" id="presenceBadge">👥 0 en ligne</div>
       <div class="sync-badge local" id="syncBadge">Mode local</div>
       <div id="authBadge"></div>
     </div>
@@ -815,6 +868,22 @@ td.paste-ready:hover{outline-color:var(--blue);background:rgba(133,183,235,.08)}
         <button class="add-btn" onclick="addType()">+ Ajouter</button>
       </div>
       <p class="warn-text" id="typeWarn"></p>
+    </div>
+  </div>
+
+  <div id="tabStats" style="display:none">
+    <div class="panel">
+      <h2>Stats</h2>
+      <p class="cloud-note">Vue par jour pour la semaine affichee et vue par semaine sur tout le planning.</p>
+      <div id="statsDetail" class="stats-sections"></div>
+    </div>
+  </div>
+
+  <div id="tabProfiles" style="display:none">
+    <div class="panel">
+      <h2>Professeurs</h2>
+      <p class="cloud-note">Compteur de cours par professeur avec le detail des types de cours.</p>
+      <div id="profilesDetail"></div>
     </div>
   </div>
 
@@ -880,6 +949,8 @@ td.paste-ready:hover{outline-color:var(--blue);background:rgba(133,183,235,.08)}
     </div>
     <label>Type de cours</label>
     <select id="mType"></select>
+    <label>Grade cible</label>
+    <select id="mGrade"></select>
     <p class="modal-note" id="mSlotHint"></p>
     <div class="register-box">
       <label>Inscriptions eleves</label>
@@ -1005,7 +1076,8 @@ const CLOUD_CONFIG={
   adminEmail:"narumi@zenkai.fr",
   schedulePath:"narumi-edt/shared",
   registrationsPath:"narumi-edt/registrations",
-  requestsPath:"narumi-edt/requests"
+  requestsPath:"narumi-edt/requests",
+  presencePath:"narumi-edt/presence"
 };
 const STORE="konoha_schedule"; // clé identique à l'original pour conserver les données
 
@@ -1014,6 +1086,7 @@ let clipboard=null;
 let drag={active:false,didDrag:false,srcKey:null,srcEntry:null,ghost:null,overKey:null};
 let ctxKey=null;
 let cancelTargetKey=null;
+let cancelTargetCourseId=null;
 let cloudApp=null,cloudDb=null,cloudAuth=null,cloudRef=null,cloudEnabled=false,cloudHasData=false,cloudBootstrapped=false,cloudRegistrationsRef=null,cloudRegistrationsBound=false,cloudRequestsRef=null,cloudRequestsBound=false;
 
 // ── STORAGE ──────────────────────────────────────────────────
@@ -1403,6 +1476,44 @@ function getRawCourse(key,entry){
   }
   return(typeof raw==='object'&&raw.name)?raw:null;
 }
+function freshCourseId(){
+  return 'course_'+Date.now().toString(36)+Math.random().toString(36).slice(2,8);
+}
+function cloneCourseForClipboard(rawCourse){
+  if(!rawCourse||typeof rawCourse!=='object')return null;
+  const name=String(rawCourse.name||'').trim();
+  if(!name)return null;
+  return{
+    id:freshCourseId(),
+    name:name,
+    sensei:String(rawCourse.sensei||'').trim(),
+    classe:String(rawCourse.classe||'').trim(),
+    location:rawCourse.location==='ext'?'ext':'room',
+    type:String(rawCourse.type||''),
+    grade:String(rawCourse.grade||'').trim(),
+    cancelled:false,
+    cancelReason:'',
+    completed:false
+  };
+}
+function sanitizeClipboardPayload(value){
+  const items=(Array.isArray(value)?value:[value]).map(cloneCourseForClipboard).filter(Boolean);
+  if(!items.length)return null;
+  return items.length===1?items[0]:items;
+}
+function pasteClipboardIntoCell(key){
+  if(!key||!clipboard)return 0;
+  const payload=sanitizeClipboardPayload(clipboard);
+  if(!payload)return 0;
+  const additions=Array.isArray(payload)?payload:[payload];
+  const existing=schedData[key];
+  const current=Array.isArray(existing)?existing.filter(Boolean):(existing&&typeof existing==='object'&&existing.name?[existing]:[]);
+  const next=current.concat(additions);
+  if(!next.length)delete schedData[key];
+  else if(next.length===1)schedData[key]=next[0];
+  else schedData[key]=next;
+  return additions.length;
+}
 function showCtxMenu(x,y,key,hasEntry,entry){
   ctxKey=key;ctxEntry=entry;
   const isCancelled=hasEntry&&entry&&entry.cancelled;
@@ -1412,7 +1523,7 @@ function showCtxMenu(x,y,key,hasEntry,entry){
   const hide=id=>document.getElementById(id).style.display='none';
 
   // Copy / Edit — seulement si normal
-  isNormal?show('ctxCopy'):hide('ctxCopy');
+  hasEntry?show('ctxCopy'):hide('ctxCopy');
   isNormal?show('ctxEdit'):hide('ctxEdit');
   // Annuler / Terminer / Rétablir
   isNormal?show('ctxCancelCourse'):hide('ctxCancelCourse');
@@ -1824,6 +1935,11 @@ load();
   let activeTab='schedule';
   let studentToken=retrieve('studentToken','');
   let cloudScheduleNeedsIds=false;
+  let cloudPresenceBound=false;
+  let cloudPresenceRef=null;
+  let cloudPresenceConnectedRef=null;
+  let presenceCount=0;
+  const presenceSessionId=getPresenceSessionId();
 
   if(!studentToken){
     studentToken='student_'+Date.now().toString(36)+Math.random().toString(36).slice(2,8);
@@ -1845,6 +1961,25 @@ load();
   function uid(prefix){
     return prefix+'_'+Date.now().toString(36)+Math.random().toString(36).slice(2,7);
   }
+  const GRADE_OPTIONS=[
+    'Apprenti genin',
+    'Genin',
+    'Genin confirmé',
+    'Chunin'
+  ];
+  function getPresenceSessionId(){
+    try{
+      const key=STORE+'_presence_session';
+      let id=sessionStorage.getItem(key);
+      if(!id){
+        id='presence_'+Date.now().toString(36)+Math.random().toString(36).slice(2,8);
+        sessionStorage.setItem(key,id);
+      }
+      return id;
+    }catch(err){
+      return 'presence_'+Date.now().toString(36)+Math.random().toString(36).slice(2,8);
+    }
+  }
   function pad2(value){
     return String(value).padStart(2,'0');
   }
@@ -1852,6 +1987,24 @@ load();
     const clean=String(value||'').trim().toUpperCase();
     if(/^#[0-9A-F]{6}$/.test(clean))return clean;
     return String(fallback||'#9FE1CB').toUpperCase();
+  }
+  function normalizeGrade(value){
+    const clean=String(value||'').trim();
+    if(!clean)return '';
+    if(GRADE_OPTIONS.includes(clean))return clean;
+    const slug=clean.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+    if(slug==='apprenti genin')return 'Apprenti genin';
+    if(slug==='genin')return 'Genin';
+    if(slug==='genin confirme')return 'Genin confirmé';
+    if(slug==='chunin')return 'Chunin';
+    return '';
+  }
+  function buildGradeSelect(){
+    const select=document.getElementById('mGrade');
+    if(!select)return;
+    select.innerHTML='<option value="">Tous grades</option>'+GRADE_OPTIONS.map(function(grade){
+      return '<option value="'+escapeHtml(grade)+'">'+escapeHtml(grade)+'</option>';
+    }).join('');
   }
   function normalizeWeekMap(raw){
     const out={};
@@ -1909,6 +2062,12 @@ load();
       return (b.createdAt||0)-(a.createdAt||0);
     });
   }
+  function updatePresenceBadge(count,isOnline){
+    const badge=document.getElementById('presenceBadge');
+    if(!badge)return;
+    badge.className='presence-badge '+(isOnline?'online':'local');
+    badge.textContent='👥 '+String(count||0)+' en ligne';
+  }
   function updateRequestCount(){
     const count=requestEntries().length;
     const badge=document.getElementById('requestCount');
@@ -1933,6 +2092,34 @@ load();
     return new Date(ts||Date.now()).toLocaleString('fr-FR',{
       day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'
     });
+  }
+  function attachPresenceCloudSync(){
+    if(cloudPresenceBound||!cloudEnabled||!cloudDb)return false;
+    cloudPresenceRef=cloudDb.ref(CLOUD_CONFIG.presencePath||'narumi-edt/presence');
+    cloudPresenceConnectedRef=cloudDb.ref('.info/connected');
+    cloudPresenceRef.on('value',function(snap){
+      const value=snap.val()||{};
+      presenceCount=Object.keys(value).length;
+      updatePresenceBadge(presenceCount,true);
+    },function(err){
+      console.error(err);
+      updatePresenceBadge(presenceCount,false);
+    });
+    cloudPresenceConnectedRef.on('value',function(snap){
+      if(snap.val()!==true){
+        updatePresenceBadge(presenceCount,false);
+        return;
+      }
+      const sessionRef=cloudPresenceRef.child(presenceSessionId);
+      sessionRef.onDisconnect().remove().then(function(){
+        return sessionRef.set({connectedAt:firebase.database.ServerValue.TIMESTAMP});
+      }).catch(function(err){
+        console.error(err);
+        updatePresenceBadge(presenceCount,false);
+      });
+    });
+    cloudPresenceBound=true;
+    return true;
   }
   function toLocalDate(dateLike){
     if(dateLike instanceof Date)return new Date(dateLike.getTime());
@@ -2028,6 +2215,7 @@ load();
       classe:String(raw.classe||'').trim(),
       location:raw.location==='ext'?'ext':'room',
       type:String(raw.type||''),
+      grade:normalizeGrade(raw.grade),
       cancelled:!!raw.cancelled,
       cancelReason:String(raw.cancelReason||'').trim(),
       completed:!!raw.completed
@@ -2295,6 +2483,41 @@ load();
     if(hasAdminSession())pushCloudState({silent:true});
   };
 
+  function summarizeTypes(refs){
+    const bag={};
+    (refs||[]).forEach(function(ref){
+      const course=ref&&ref.course;
+      if(!course||course.cancelled)return;
+      const type=courseType(course);
+      const key=type&&type.id?type.id:'__none__';
+      if(!bag[key]){
+        bag[key]={
+          name:type?type.name:'Sans type',
+          color:type&&type.color?type.color:'#3d4b63',
+          count:0
+        };
+      }
+      bag[key].count+=1;
+    });
+    return Object.values(bag).sort(function(a,b){
+      if(b.count!==a.count)return b.count-a.count;
+      return a.name.localeCompare(b.name,'fr',{sensitivity:'base'});
+    });
+  }
+  function renderTypeChips(items,emptyLabel){
+    if(!items.length)return '<div class="panel-empty">'+escapeHtml(emptyLabel)+'</div>';
+    return '<div class="breakdown-chips">'+items.map(function(item){
+      const bg=item.color||'#3d4b63';
+      const fg=/^#[0-9A-Fa-f]{6}$/.test(bg)?autoText(bg):'#f0ede8';
+      return '<span class="breakdown-chip" style="background:'+bg+';color:'+fg+'">'+escapeHtml(item.name)+' : '+item.count+'</span>';
+    }).join('')+'</div>';
+  }
+  function weekRangeLabel(targetWeek){
+    const monday=ensureWeekDate(targetWeek);
+    const sunday=addDaysKey(monday,6);
+    return 'Semaine du '+fmtShortDate(monday)+' au '+fmtShortDate(sunday);
+  }
+
   window.renderStats=function(){
     const bar=document.getElementById('statsBar');
     if(!isAdmin){bar.style.display='none';return;}
@@ -2309,10 +2532,73 @@ load();
       '<div class="stat-card"><span class="stat-icon">📚</span><div><div class="stat-val">'+courses.length+'</div><div class="stat-lbl">Total global</div></div></div>';
   };
 
+  window.renderDetailedStats=function(){
+    const host=document.getElementById('statsDetail');
+    if(!host)return;
+    if(!isAdmin){host.innerHTML='';return;}
+    const refs=listCourses().filter(function(ref){return ref&&ref.course&&!ref.course.cancelled;});
+    if(!refs.length){
+      host.innerHTML='<div class="panel-empty">Aucun cours a analyser pour le moment.</div>';
+      return;
+    }
+    const currentWeekRefs=refs.filter(function(ref){
+      const meta=parseKeyMeta(ref.key);
+      return meta&&meta.week===week;
+    });
+    const uniqueTypes=new Set(refs.map(function(ref){
+      const type=courseType(ref.course);
+      return type?type.id:'__none__';
+    })).size;
+    const currentMonday=ensureWeekDate(week);
+    const dailyCards=DAYS.map(function(dayName,dayIndex){
+      const dayKey=addDaysKey(currentMonday,dayIndex);
+      const dayRefs=currentWeekRefs.filter(function(ref){
+        const meta=parseKeyMeta(ref.key);
+        return meta&&meta.day===dayIndex;
+      });
+      return '<article class="breakdown-card">'+
+        '<div class="breakdown-head">'+
+          '<div><div class="breakdown-title">'+escapeHtml(dayName)+'</div><div class="breakdown-sub">'+escapeHtml(fmtShortDate(dayKey))+'</div></div>'+
+          '<div class="breakdown-total"><strong>'+dayRefs.length+'</strong><span>cours</span></div>'+
+        '</div>'+
+        renderTypeChips(summarizeTypes(dayRefs),'Aucun cours sur cette journee.')+
+      '</article>';
+    }).join('');
+    const byWeek={};
+    refs.forEach(function(ref){
+      const meta=parseKeyMeta(ref.key);
+      if(!meta)return;
+      if(!byWeek[meta.week])byWeek[meta.week]=[];
+      byWeek[meta.week].push(ref);
+    });
+    const weekCards=Object.keys(byWeek).map(Number).sort(function(a,b){
+      if(a===week)return-1;
+      if(b===week)return 1;
+      return b-a;
+    }).map(function(targetWeek){
+      const weekRefs=byWeek[targetWeek]||[];
+      return '<article class="breakdown-card">'+
+        '<div class="breakdown-head">'+
+          '<div><div class="breakdown-title">'+escapeHtml(weekRangeLabel(targetWeek))+'</div><div class="breakdown-sub">Semaine '+targetWeek+'</div></div>'+
+          '<div class="breakdown-total"><strong>'+weekRefs.length+'</strong><span>cours</span></div>'+
+        '</div>'+
+        renderTypeChips(summarizeTypes(weekRefs),'Aucun cours sur cette semaine.')+
+      '</article>';
+    }).join('');
+    host.innerHTML=
+      '<div class="stats-bar">'+
+        '<div class="stat-card"><span class="stat-icon">📅</span><div><div class="stat-val">'+currentWeekRefs.length+'</div><div class="stat-lbl">Semaine affichee</div></div></div>'+
+        '<div class="stat-card"><span class="stat-icon">📚</span><div><div class="stat-val">'+refs.length+'</div><div class="stat-lbl">Cours hors annulation</div></div></div>'+
+        '<div class="stat-card"><span class="stat-icon">⚡</span><div><div class="stat-val">'+uniqueTypes+'</div><div class="stat-lbl">Types utilises</div></div></div>'+
+      '</div>'+
+      '<section><div class="section-title">Par jour</div><div class="section-note">Detail de la semaine actuellement affichee.</div><div class="breakdown-grid">'+dailyCards+'</div></section>'+
+      '<section><div class="section-title">Par semaine</div><div class="section-note">Detail cumule de toutes les semaines presentes dans le planning.</div><div class="breakdown-grid">'+weekCards+'</div></section>';
+  };
+
   window.switchTab=function(name){
     activeTab=name||'schedule';
     document.querySelectorAll('.tab').forEach(function(btn){btn.classList.remove('active');});
-    ['schedule','slots','types','admin'].forEach(function(tabName){
+    ['schedule','slots','types','stats','profiles','admin'].forEach(function(tabName){
       const el=document.getElementById('tab'+tabName[0].toUpperCase()+tabName.slice(1));
       if(el)el.style.display=tabName===activeTab?'':'none';
     });
@@ -2321,6 +2607,8 @@ load();
     if(activeTab==='slots')renderSlotList();
     if(activeTab==='types')renderTypeList();
     if(activeTab==='schedule')renderStats();
+    if(activeTab==='stats')renderDetailedStats();
+    if(activeTab==='profiles')renderProfiles();
   };
 
   window.updateAuthUI=function(){
@@ -2332,13 +2620,15 @@ load();
       tabBar.innerHTML=base.concat([
         '<button class="tab" data-tab="slots" onclick="switchTab(\'slots\')">🕐 Creneaux horaires</button>',
         '<button class="tab" data-tab="types" onclick="switchTab(\'types\')">⚡ Types de cours</button>',
+        '<button class="tab" data-tab="stats" onclick="switchTab(\'stats\')">Stats</button>',
+        '<button class="tab" data-tab="profiles" onclick="switchTab(\'profiles\')">Professeurs</button>',
         '<button class="tab" data-tab="admin" onclick="switchTab(\'admin\')">⚙️ Admin</button>'
       ]).join('');
     }else{
       badge.innerHTML='<div class="viewer-badge" onclick="openLoginOverlay()">🔒 Visiteur</div>';
       tabBar.innerHTML=base.join('');
     }
-    if(!['schedule','slots','types','admin'].includes(activeTab))activeTab='schedule';
+    if(!['schedule','slots','types','stats','profiles','admin'].includes(activeTab))activeTab='schedule';
     if(!isAdmin&&activeTab!=='schedule')activeTab='schedule';
     switchTab(activeTab);
     renderRequests();
@@ -2348,7 +2638,60 @@ load();
     }
   };
 
-  window.renderProfiles=function(){};
+  window.renderProfiles=function(){
+    const host=document.getElementById('profilesDetail');
+    if(!host)return;
+    if(!isAdmin){host.innerHTML='';return;}
+    const bag={};
+    listCourses().forEach(function(ref){
+      const course=ref&&ref.course;
+      if(!course||course.cancelled)return;
+      const meta=parseKeyMeta(ref.key);
+      const teacher=String(course.sensei||'Non renseigne').trim()||'Non renseigne';
+      if(!bag[teacher]){
+        bag[teacher]={
+          name:teacher,
+          total:0,
+          weekCount:0,
+          types:{}
+        };
+      }
+      bag[teacher].total+=1;
+      if(meta&&meta.week===week)bag[teacher].weekCount+=1;
+      const type=courseType(course);
+      const typeName=type?type.name:'Sans type';
+      if(!bag[teacher].types[typeName]){
+        bag[teacher].types[typeName]={
+          name:typeName,
+          color:type&&type.color?type.color:'#3d4b63',
+          count:0
+        };
+      }
+      bag[teacher].types[typeName].count+=1;
+    });
+    const profiles=Object.values(bag).sort(function(a,b){
+      if(b.total!==a.total)return b.total-a.total;
+      return a.name.localeCompare(b.name,'fr',{sensitivity:'base'});
+    });
+    if(!profiles.length){
+      host.innerHTML='<div class="panel-empty">Aucun professeur a afficher pour le moment.</div>';
+      return;
+    }
+    host.innerHTML='<div class="profile-grid">'+profiles.map(function(profile){
+      const typeItems=Object.values(profile.types).sort(function(a,b){
+        if(b.count!==a.count)return b.count-a.count;
+        return a.name.localeCompare(b.name,'fr',{sensitivity:'base'});
+      });
+      return '<article class="profile-card">'+
+        '<div class="profile-name">'+escapeHtml(profile.name)+'</div>'+
+        '<div class="profile-meta">'+
+          '<div class="profile-stat"><strong>'+profile.total+'</strong><span>Total cours</span></div>'+
+          '<div class="profile-stat"><strong>'+profile.weekCount+'</strong><span>Semaine affichee</span></div>'+
+        '</div>'+
+        '<div class="profile-types">'+renderTypeChips(typeItems,'Aucun type renseigne.')+'</div>'+
+      '</article>';
+    }).join('')+'</div>';
+  };
 
   window.renderSlotList=function(){
     const list=document.getElementById('slotList');
@@ -2566,12 +2909,14 @@ load();
     curCell=key;
     modalCourseId=courseId||(entry&&entry.id)||null;
     buildTypeSelect();
+    buildGradeSelect();
     const course=entry||null;
     document.getElementById('mName').value=course&&course.name||'';
     document.getElementById('mSensei').value=course&&course.sensei||'';
     document.getElementById('mClasse').value=course&&course.classe||'';
     document.getElementById('mPlaceKind').value=course&&course.location==='ext'?'ext':'room';
     document.getElementById('mType').value=course&&course.type||'';
+    document.getElementById('mGrade').value=course&&course.grade||'';
     document.getElementById('mSlotHint').textContent=labelForKey(key);
     document.getElementById('mTitle').textContent=course?'Modifier le cours':'Nouveau cours';
     document.getElementById('mIcon').textContent=course?'✏️':'📜';
@@ -2602,6 +2947,7 @@ load();
       classe:document.getElementById('mClasse').value.trim(),
       location:document.getElementById('mPlaceKind').value==='ext'?'ext':'room',
       type:document.getElementById('mType').value,
+      grade:normalizeGrade(document.getElementById('mGrade').value),
       cancelled:previous?previous.cancelled:false,
       cancelReason:previous?previous.cancelReason:''
     };
@@ -2673,6 +3019,7 @@ load();
             const nameHtml=course.cancelled?'<s style="opacity:.7">'+escapeHtml(course.name)+'</s>':escapeHtml(course.name);
             let html='<div class="cname" style="color:'+fg+'">'+namePrefix+nameHtml+'</div>';
             if(course.sensei)html+='<div class="csensei" style="color:'+fg+'">'+escapeHtml(course.sensei)+'</div>';
+            if(course.grade)html+='<div class="csensei" style="color:'+fg+';opacity:.82">Grade : '+escapeHtml(course.grade)+'</div>';
             if(course.classe)html+='<div class="csensei" style="color:'+fg+';opacity:.7">'+(course.location==='ext'?'🌿':'🏛️')+' '+escapeHtml(course.classe)+'</div>';
             if(course.cancelled){
               html+='<div class="ccancel-label">Cours annulé'+(course.cancelReason?' • '+escapeHtml(course.cancelReason):'')+'</div>';
@@ -2695,6 +3042,13 @@ load();
               if(isAdmin)openModal(key,course,course.id);
               else openViewModal(key,course.id);
             });
+            if(isAdmin){
+              btn.addEventListener('contextmenu',function(ev){
+                ev.preventDefault();
+                ev.stopPropagation();
+                showCtxMenu(ev.clientX,ev.clientY,key,true,course);
+              });
+            }
             stack.appendChild(btn);
           });
           if(isAdmin){
@@ -2711,7 +3065,13 @@ load();
           btn.innerHTML='<div class="add-hint">'+(clipboard?'📌 Coller':'✦ Ajouter')+'</div>';
           btn.addEventListener('click',function(){
             if(drag.didDrag)return;
-            if(clipboard){schedData[key]=JSON.parse(JSON.stringify(clipboard));clipboard=null;render();saveAll();showToast('📌 Cours collé !');}
+if(clipboard){
+              const added=pasteClipboardIntoCell(key);
+              clipboard=null;
+              render();
+              saveAll();
+              showToast(added>1?'Cours ajoutes !':'Cours colle !');
+            }
             else{openModal(key,null,null);}
           });
           td.appendChild(btn);
@@ -2735,6 +3095,8 @@ load();
     });
     renderLegend();
     renderStats();
+    if(activeTab==='stats')renderDetailedStats();
+    if(activeTab==='profiles')renderProfiles();
     refreshOpenPanels();
   };
 
@@ -2751,6 +3113,7 @@ load();
       '<div>'+escapeHtml(labelForKey(ref.key))+'</div>'+
       '<div><strong>Professeur :</strong> '+escapeHtml(course.sensei||'Non renseigne')+'</div>'+
       '<div><strong>Type :</strong> '+escapeHtml(typeName)+'</div>'+
+      '<div><strong>Grade :</strong> '+escapeHtml(course.grade||'Tous grades')+'</div>'+
       '<div><strong>Lieu :</strong> '+escapeHtml((course.location==='ext'?'Exterieur':'Salle')+(course.classe?' • '+course.classe:''))+'</div>'+
       (course.cancelled?'<div><strong>Statut :</strong> Annule'+(course.cancelReason?' • '+escapeHtml(course.cancelReason):'')+'</div>':'');
     document.getElementById('vTitle').textContent=course.name;
@@ -2905,6 +3268,74 @@ load();
     showToast(result.online?'Inscription enregistree !':'Inscription locale uniquement.');
   };
 
+  function rebindMenuItem(id,handler){
+    const oldNode=document.getElementById(id);
+    if(!oldNode||!oldNode.parentNode)return;
+    const nextNode=oldNode.cloneNode(true);
+    oldNode.parentNode.replaceChild(nextNode,oldNode);
+    nextNode.addEventListener('click',handler);
+  }
+  function bindContextMenuActions(){
+    rebindMenuItem('ctxCopy',function(){
+      if(!ctxKey||!schedData[ctxKey])return hideCtxMenu();
+      const source=ctxEntry?getRawCourse(ctxKey,ctxEntry):schedData[ctxKey];
+      clipboard=sanitizeClipboardPayload(source);
+      if(!clipboard)return hideCtxMenu();
+      showToast('Copie prete. Clique sur une case pour coller.');
+      hideCtxMenu();
+      render();
+    });
+    rebindMenuItem('ctxEdit',function(){
+      const key=ctxKey;
+      const entry=ctxEntry||schedData[key]||null;
+      hideCtxMenu();
+      openModal(key,entry,entry&&entry.id?entry.id:null);
+    });
+    rebindMenuItem('ctxCancelCourse',function(){
+      const key=ctxKey;
+      const entry=ctxEntry||null;
+      hideCtxMenu();
+      openCancelOverlay(key,entry);
+    });
+    rebindMenuItem('ctxPaste',function(){
+      if(!ctxKey||!clipboard)return hideCtxMenu();
+      const added=pasteClipboardIntoCell(ctxKey);
+      clipboard=null;
+      render();
+      saveAll();
+      showToast(added>1?'Cours ajoutes !':'Cours colle !');
+      hideCtxMenu();
+    });
+  }
+
+  window.openCancelOverlay=function(key,entry){
+    cancelTargetKey=key;
+    cancelTargetCourseId=entry&&entry.id?entry.id:null;
+    const course=getRawCourse(key,entry||null);
+    document.getElementById('cancelCourseName').textContent=course?course.name:'';
+    document.getElementById('cancelReason').value='';
+    document.getElementById('cancelOverlay').classList.add('open');
+    setTimeout(function(){document.getElementById('cancelReason').focus();},50);
+  };
+  window.closeCancelOverlay=function(){
+    document.getElementById('cancelOverlay').classList.remove('open');
+    cancelTargetKey=null;
+    cancelTargetCourseId=null;
+  };
+  window.confirmCancel=function(){
+    if(!cancelTargetKey||!schedData[cancelTargetKey])return closeCancelOverlay();
+    const reason=document.getElementById('cancelReason').value.trim();
+    const course=getRawCourse(cancelTargetKey,cancelTargetCourseId?{id:cancelTargetCourseId}:null);
+    if(course){
+      course.cancelled=true;
+      course.cancelReason=reason||'';
+    }
+    closeCancelOverlay();
+    render();
+    saveAll();
+    showToast('Cours annule.');
+  };
+
   function bindEnhancements(){
     const picker=document.getElementById('weekPicker');
     const label=document.getElementById('wkLabel');
@@ -2935,6 +3366,7 @@ load();
     document.addEventListener('keydown',function(ev){
       if(ev.key==='Escape')closeRequestDrawer();
     });
+    bindContextMenuActions();
   }
 
   schedData=normalizeSchedule(schedData);
@@ -2945,6 +3377,7 @@ load();
   bindEnhancements();
   updateWkLabel();
   updateAuthUI();
+  updatePresenceBadge(0,false);
   if(!attachRegistrationsCloudSync()){
     let regSyncRetries=0;
     const regSyncTimer=setInterval(function(){
@@ -2957,6 +3390,13 @@ load();
     const reqSyncTimer=setInterval(function(){
       reqSyncRetries+=1;
       if(attachRequestsCloudSync()||reqSyncRetries>20)clearInterval(reqSyncTimer);
+    },500);
+  }
+  if(!attachPresenceCloudSync()){
+    let presenceSyncRetries=0;
+    const presenceSyncTimer=setInterval(function(){
+      presenceSyncRetries+=1;
+      if(attachPresenceCloudSync()||presenceSyncRetries>20)clearInterval(presenceSyncTimer);
     },500);
   }
   renderRequests();
