@@ -882,6 +882,16 @@ td.paste-ready:hover{outline-color:var(--blue);background:rgba(133,183,235,.08)}
   <div id="tabProfiles" style="display:none">
     <div class="panel">
       <h2>👨‍🏫 Professeurs</h2>
+      <p class="cloud-note">Cree tes professeurs ici puis choisis-les dans le formulaire des cours.</p>
+      <div class="row-list" id="teacherList"></div>
+      <hr class="sep">
+      <p style="font-size:12px;color:var(--text2);margin-bottom:.5rem;font-weight:700;letter-spacing:.5px">AJOUTER UN PROFESSEUR</p>
+      <div class="add-form">
+        <input type="text" id="newTeacherName" placeholder="Nom du professeur..." maxlength="40">
+        <button class="add-btn" onclick="addTeacher()">+ Ajouter</button>
+      </div>
+      <p class="warn-text" id="teacherWarn"></p>
+      <hr class="sep">
       <p class="cloud-note">Compteur de cours par professeur avec le detail des types de cours.</p>
       <div id="profilesDetail"></div>
     </div>
@@ -933,7 +943,7 @@ td.paste-ready:hover{outline-color:var(--blue);background:rgba(133,183,235,.08)}
     <label>Nom du cours</label>
     <input type="text" id="mName" placeholder="Ex: Ninjutsu avancé" maxlength="40">
     <label>Sensei / Responsable</label>
-    <input type="text" id="mSensei" placeholder="Ex: Kakashi-sensei" maxlength="30">
+    <select id="mSensei"></select>
     <div class="place-row">
       <div>
         <label>Lieu</label>
@@ -1062,6 +1072,7 @@ const DEFAULT_TYPES=[
   {id:"armes",name:"Maniement d'armes",color:"#FAC775",text:"#633806"},
   {id:"chakra",name:"Contrôle du chakra",color:"#ED93B1",text:"#72243E"},
 ];
+const DEFAULT_TEACHERS=[];
 const DEFAULT_PWD="gtn123";
 const CLOUD_CONFIG={
   enabled:true,
@@ -1081,7 +1092,7 @@ const CLOUD_CONFIG={
 };
 const STORE="konoha_schedule"; // clé identique à l'original pour conserver les données
 
-let week=1,schedData={},types=[],slots=[],curCell=null,isAdmin=false,adminPwd=DEFAULT_PWD;
+let week=1,schedData={},types=[],slots=[],teachers=[],curCell=null,isAdmin=false,adminPwd=DEFAULT_PWD;
 let clipboard=null;
 let drag={active:false,didDrag:false,srcKey:null,srcEntry:null,ghost:null,overKey:null};
 let ctxKey=null;
@@ -1113,6 +1124,35 @@ function slotShort(s){
   return s.start+'<br>'+s.end;
 }
 function slotDisplay(s){return s.label?s.label:s.start+' – '+s.end;}
+function normalizeTeacherName(value){return String(value||'').replace(/\s+/g,' ').trim();}
+function teacherNamesFromSchedule(raw){
+  const names=[],seen=new Set();
+  if(!raw||typeof raw!=='object')return names;
+  Object.values(raw).forEach(function(value){
+    const items=Array.isArray(value)?value:(value&&typeof value==='object'&&value.name?[value]:[]);
+    items.forEach(function(course){
+      const name=normalizeTeacherName(course&&course.sensei);
+      const key=name.toLowerCase();
+      if(!name||seen.has(key))return;
+      seen.add(key);
+      names.push(name);
+    });
+  });
+  return names;
+}
+function mergeTeacherNames(raw,scheduleSource){
+  const out=[],seen=new Set();
+  function addOne(value){
+    const name=normalizeTeacherName(typeof value==='string'?value:(value&&value.name));
+    const key=name.toLowerCase();
+    if(!name||seen.has(key))return;
+    seen.add(key);
+    out.push(name);
+  }
+  (Array.isArray(raw)?raw:[]).forEach(addOne);
+  teacherNamesFromSchedule(scheduleSource).forEach(addOne);
+  return out;
+}
 
 // ── LOAD / SAVE ──────────────────────────────────────────────
 function hasCloudConfig(){
@@ -1122,6 +1162,7 @@ function buildSharedState(){
   return{
     types:cloneData(types),
     slots:cloneData(slots),
+    teachers:cloneData(teachers),
     sched:cloneData(schedData),
     updatedAt:Date.now()
   };
@@ -1130,6 +1171,7 @@ function saveLocalState(){
   persist('pwd',adminPwd);
   persist('types',types);
   persist('slots',slots);
+  persist('teachers',teachers);
   persist('sched',schedData);
   persist('week',week);
 }
@@ -1137,12 +1179,15 @@ function applySharedState(data){
   types=Array.isArray(data?.types)&&data.types.length?data.types:cloneData(DEFAULT_TYPES);
   slots=Array.isArray(data?.slots)&&data.slots.length?data.slots:cloneData(DEFAULT_SLOTS);
   schedData=data&&typeof data.sched==='object'&&data.sched?data.sched:{};
+  teachers=mergeTeacherNames(data&&data.teachers,schedData);
   persist('types',types);
   persist('slots',slots);
+  persist('teachers',teachers);
   persist('sched',schedData);
   render();
   renderSlotList();
   renderTypeList();
+  if(typeof renderTeacherList==='function')renderTeacherList();
 }
 function updateSyncBadge(mode,text){
   const badge=document.getElementById('syncBadge');
@@ -1277,11 +1322,13 @@ function load(){
   types=retrieve('types',null)||cloneData(DEFAULT_TYPES);
   slots=retrieve('slots',null)||cloneData(DEFAULT_SLOTS);
   schedData=retrieve('sched',{});
+  teachers=mergeTeacherNames(retrieve('teachers',DEFAULT_TEACHERS),schedData);
   week=retrieve('week',1);
   updateWkLabel();
   render();
   renderSlotList();
   renderTypeList();
+  if(typeof renderTeacherList==='function')renderTeacherList();
   updateAuthUI();
   initCloud();
 }
@@ -1871,9 +1918,21 @@ function buildTypeSelect(){
   const sel=document.getElementById('mType');sel.innerHTML='<option value="">— Sans type —</option>';
   types.forEach(t=>{const o=document.createElement('option');o.value=t.id;o.textContent=t.name;sel.appendChild(o);});
 }
+function buildTeacherSelect(selectedName){
+  const sel=document.getElementById('mSensei');
+  if(!sel)return;
+  const names=mergeTeacherNames((teachers||[]).concat(selectedName?[selectedName]:[]),null);
+  sel.innerHTML='<option value="">— Non renseigné —</option>';
+  names.forEach(function(name){
+    const opt=document.createElement('option');
+    opt.value=name;
+    opt.textContent=name;
+    sel.appendChild(opt);
+  });
+}
 function openModal(key,e){
   if(!isAdmin)return;
-  curCell=key;buildTypeSelect();
+  curCell=key;buildTypeSelect();buildTeacherSelect(e?.sensei||'');
   document.getElementById('mName').value=e?.name||'';
   document.getElementById('mSensei').value=e?.sensei||'';
   document.getElementById('mClasse').value=e?.classe||'';
@@ -1895,7 +1954,7 @@ function saveCell(){
   const prev=schedData[curCell]||{};
   schedData[curCell]={
     name,
-    sensei:document.getElementById('mSensei').value.trim(),
+    sensei:normalizeTeacherName(document.getElementById('mSensei').value),
     classe:document.getElementById('mClasse').value.trim(),
     type:document.getElementById('mType').value,
     ...(prev.cancelled?{cancelled:prev.cancelled,cancelReason:prev.cancelReason}:{}),
@@ -1945,11 +2004,13 @@ load();
     studentToken='student_'+Date.now().toString(36)+Math.random().toString(36).slice(2,8);
     persist('studentToken',studentToken);
   }
+  teachers=mergeTeacherNames(retrieve('teachers',teachers||DEFAULT_TEACHERS),schedData);
 
   function syncSharedVars(){
     window.weekMap=weekMap;
     window.registrationsData=registrationsData;
     window.requestsData=requestsData;
+    window.teachers=teachers;
   }
   syncSharedVars();
 
@@ -2211,7 +2272,7 @@ load();
     return{
       id:String(raw.id||legacyCourseId(key,index)),
       name:name,
-      sensei:String(raw.sensei||'').trim(),
+      sensei:normalizeTeacherName(raw.sensei),
       classe:String(raw.classe||'').trim(),
       location:raw.location==='ext'?'ext':'room',
       type:String(raw.type||''),
@@ -2283,6 +2344,7 @@ load();
     persist('pwd',adminPwd);
     persist('types',types);
     persist('slots',slots);
+    persist('teachers',teachers);
     persist('sched',schedData);
     persist('week',week);
     persist('weekMap',weekMap);
@@ -2410,6 +2472,7 @@ load();
     return{
       types:cloneData(types),
       slots:cloneData(slots),
+      teachers:cloneData(teachers),
       sched:cloneData(normalizeSchedule(schedData)),
       weekMap:cloneData(weekMap),
       updatedAt:Date.now()
@@ -2425,6 +2488,7 @@ load();
     types=Array.isArray(data&&data.types)&&data.types.length?cloneData(data.types):cloneData(DEFAULT_TYPES);
     slots=Array.isArray(data&&data.slots)&&data.slots.length?cloneData(data.slots):cloneData(DEFAULT_SLOTS);
     schedData=normalizeSchedule(data&&data.sched?data.sched:{});
+    teachers=mergeTeacherNames(data&&data.teachers,schedData);
     weekMap=normalizeWeekMap(data&&data.weekMap?data.weekMap:weekMap);
     registrationsData=normalizeRegistrations(data&&data.registrations?data.registrations:registrationsData);
     saveEnhancedLocal();
@@ -2432,6 +2496,7 @@ load();
     render();
     renderSlotList();
     renderTypeList();
+    renderTeacherList();
     refreshOpenPanels();
     attachRegistrationsCloudSync();
     attachRequestsCloudSync();
@@ -2641,13 +2706,22 @@ load();
   window.renderProfiles=function(){
     const host=document.getElementById('profilesDetail');
     if(!host)return;
+    renderTeacherList();
     if(!isAdmin){host.innerHTML='';return;}
     const bag={};
+    teachers.forEach(function(name){
+      bag[name]={
+        name:name,
+        total:0,
+        weekCount:0,
+        types:{}
+      };
+    });
     listCourses().forEach(function(ref){
       const course=ref&&ref.course;
       if(!course||course.cancelled)return;
       const meta=parseKeyMeta(ref.key);
-      const teacher=String(course.sensei||'Non renseigne').trim()||'Non renseigne';
+      const teacher=normalizeTeacherName(course.sensei)||'Non renseigne';
       if(!bag[teacher]){
         bag[teacher]={
           name:teacher,
@@ -2851,6 +2925,63 @@ load();
     saveAll();
   };
 
+  window.renderTeacherList=function(){
+    const list=document.getElementById('teacherList');
+    if(!list)return;
+    list.innerHTML='';
+    if(!teachers.length){
+      list.innerHTML='<p style="font-size:13px;color:var(--text2)">Aucun professeur.</p>';
+      return;
+    }
+    teachers.forEach(function(name,index){
+      const used=listCourses().filter(function(ref){return normalizeTeacherName(ref.course.sensei)===name;}).length;
+      const row=document.createElement('div');
+      row.className='item-row';
+      row.innerHTML=
+        '<span style="flex:1;font-size:13px;color:var(--text);font-weight:600">'+escapeHtml(name)+'</span>'+
+        '<span style="font-size:10px;color:var(--text2);padding:2px 8px;border:1px solid var(--border2);border-radius:10px">'+used+' cours</span>'+
+        '<button class="del-btn">✕</button>';
+      row.querySelector('.del-btn').addEventListener('click',function(){removeTeacher(index);});
+      list.appendChild(row);
+    });
+  };
+
+  window.addTeacher=function(){
+    const input=document.getElementById('newTeacherName');
+    const warn=document.getElementById('teacherWarn');
+    const name=normalizeTeacherName(input&&input.value);
+    if(!name){warn.textContent='Donne un nom.';return;}
+    if(teachers.some(function(item){return item.toLowerCase()===name.toLowerCase();})){warn.textContent='Ce professeur existe deja.';return;}
+    warn.textContent='';
+    teachers=mergeTeacherNames(teachers.concat(name),schedData);
+    if(input)input.value='';
+    renderTeacherList();
+    renderProfiles();
+    saveAll();
+  };
+
+  window.removeTeacher=function(index){
+    const name=teachers[index];
+    if(!name)return;
+    const used=listCourses().filter(function(ref){return normalizeTeacherName(ref.course.sensei)===name;});
+    if(used.length&&!confirm('"'+name+'" est utilise dans '+used.length+' cours. Le retirer de ces cours ?'))return;
+    if(used.length){
+      Object.keys(schedData).forEach(function(key){
+        const courses=getCellCourses(key).map(function(course){
+          if(normalizeTeacherName(course.sensei)===name)course.sensei='';
+          return course;
+        });
+        setCellCourses(key,courses);
+      });
+    }
+    teachers.splice(index,1);
+    teachers=mergeTeacherNames(teachers,schedData);
+    renderTeacherList();
+    renderProfiles();
+    render();
+    saveAll();
+  };
+
   window.startDrag=function(ev,key,entry,bg,fg){
     if(!isAdmin||ev.button!==0||!entry||!entry.id)return;
     Object.assign(drag,{
@@ -2909,6 +3040,7 @@ load();
     curCell=key;
     modalCourseId=courseId||(entry&&entry.id)||null;
     buildTypeSelect();
+    buildTeacherSelect(entry&&entry.sensei||'');
     buildGradeSelect();
     const course=entry||null;
     document.getElementById('mName').value=course&&course.name||'';
@@ -2943,7 +3075,7 @@ load();
     const nextCourse={
       id:modalCourseId||uid('course'),
       name:name,
-      sensei:document.getElementById('mSensei').value.trim(),
+      sensei:normalizeTeacherName(document.getElementById('mSensei').value),
       classe:document.getElementById('mClasse').value.trim(),
       location:document.getElementById('mPlaceKind').value==='ext'?'ext':'room',
       type:document.getElementById('mType').value,
