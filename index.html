@@ -2949,7 +2949,8 @@ load();
       type:document.getElementById('mType').value,
       grade:normalizeGrade(document.getElementById('mGrade').value),
       cancelled:previous?previous.cancelled:false,
-      cancelReason:previous?previous.cancelReason:''
+      cancelReason:previous?previous.cancelReason:'',
+      completed:previous?previous.completed:false
     };
     if(index>=0)courses[index]=nextCourse;
     else courses.push(nextCourse);
