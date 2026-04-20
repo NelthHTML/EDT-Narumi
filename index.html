@@ -145,14 +145,46 @@ body::after{
   border-radius:var(--radius-lg);border:1px solid var(--border);
   background:var(--navy2);box-shadow:var(--shadow);overflow-x:auto;
 }
-.schedule-shell{
-  display:grid;grid-template-columns:320px minmax(0,1fr);gap:12px;align-items:start;
+.request-toggle{
+  background:rgba(245,200,66,.09);border:1px solid rgba(245,200,66,.22);
+  color:var(--gold);border-radius:8px;padding:5px 14px;cursor:pointer;
+  font-size:11px;font-weight:700;letter-spacing:.5px;white-space:nowrap;
+  transition:all .15s;display:flex;align-items:center;gap:8px;
 }
-.schedule-main{min-width:0}
+.request-toggle:hover{background:rgba(245,200,66,.18);box-shadow:0 0 12px rgba(245,200,66,.2)}
+.request-count{
+  min-width:20px;height:20px;border-radius:999px;background:rgba(255,255,255,.08);
+  display:inline-flex;align-items:center;justify-content:center;font-size:10px;color:var(--text);
+}
+.request-overlay{
+  display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:115;
+  backdrop-filter:blur(3px);
+}
+.request-overlay.open{display:block}
+.request-drawer{
+  position:fixed;top:0;right:0;bottom:0;width:min(420px,100vw);
+  background:linear-gradient(180deg,#0f1420,#121826);border-left:1px solid var(--border3);
+  box-shadow:var(--shadow);z-index:120;transform:translateX(100%);transition:transform .2s ease;
+  display:flex;flex-direction:column;
+}
+.request-drawer.open{transform:translateX(0)}
+.request-drawer-head{
+  display:flex;align-items:flex-start;justify-content:space-between;gap:12px;
+  padding:1rem 1rem .2rem 1rem;border-bottom:1px solid var(--border2);
+}
+.request-drawer-head h2{
+  font-family:'Cinzel',serif;font-size:15px;font-weight:700;color:var(--gold);letter-spacing:.5px;
+}
+.request-drawer-head p{
+  margin-top:4px;font-size:12px;color:var(--text2);line-height:1.4;
+}
+.request-close{
+  background:none;border:1px solid var(--border2);color:var(--text2);border-radius:8px;
+  width:34px;height:34px;cursor:pointer;font-size:18px;line-height:1;flex-shrink:0;
+}
+.request-close:hover{background:rgba(255,255,255,.05);color:var(--text)}
 .request-panel{
-  background:var(--navy2);border:1px solid var(--border);
-  border-radius:var(--radius-lg);padding:1.1rem;box-shadow:var(--shadow);
-  position:sticky;top:1rem;
+  padding:1rem;overflow:auto;flex:1;
 }
 .request-panel h2{
   font-family:'Cinzel',serif;font-size:15px;font-weight:700;color:var(--gold);
@@ -697,10 +729,7 @@ td.paste-ready:hover{outline-color:var(--blue);background:rgba(133,183,235,.08)}
   .header{padding:.85rem 1rem}
   .header-title h1{font-size:14px}
   .modal-box{padding:1.2rem;width:100%}
-}
-@media(max-width:980px){
-  .schedule-shell{grid-template-columns:1fr}
-  .request-panel{position:static}
+  .request-drawer{width:100vw}
 }
 </style>
 </head>
@@ -723,6 +752,10 @@ td.paste-ready:hover{outline-color:var(--blue);background:rgba(133,183,235,.08)}
         <button class="week-btn" onclick="chgWeek(1)">&#8250;</button>
         <input type="date" class="week-picker" id="weekPicker" aria-label="Choisir une semaine">
       </div>
+      <button class="request-toggle" id="requestToggleBtn" onclick="openRequestDrawer()">
+        <span>Demandes</span>
+        <span class="request-count" id="requestCount">0</span>
+      </button>
       <div class="sync-badge local" id="syncBadge">Mode local</div>
       <div id="authBadge"></div>
     </div>
@@ -733,36 +766,21 @@ td.paste-ready:hover{outline-color:var(--blue);background:rgba(133,183,235,.08)}
 
   <!-- SCHEDULE TAB -->
   <div id="tabSchedule">
-    <div class="schedule-shell">
-      <aside class="request-panel">
-        <h2>Demandes de cours</h2>
-        <p class="request-help">Laisse une idee de cours ou une envie d'atelier pour que les professeurs sachent quoi organiser.</p>
-        <div class="request-form">
-          <input type="text" id="reqName" placeholder="Ton nom (optionnel)" maxlength="40">
-          <textarea id="reqText" placeholder="Ex : J'aimerais un cours de self-defense, de sabre, de katas..." maxlength="220"></textarea>
-          <button class="add-btn" onclick="submitCourseRequest()">Envoyer la demande</button>
-          <p class="warn-text" id="reqWarn"></p>
-        </div>
-        <div class="request-list" id="requestList"></div>
-      </aside>
-      <div class="schedule-main">
-        <div class="stats-bar" id="statsBar" style="display:none"></div>
-        <div class="grid-wrap">
-          <table>
-            <thead>
-              <tr>
-                <th></th>
-                <th>Lundi</th><th>Mardi</th><th>Mercredi</th>
-                <th>Jeudi</th><th>Vendredi</th>
-                <th class="weekend">Samedi</th><th class="weekend">Dimanche</th>
-              </tr>
-            </thead>
-            <tbody id="tbody"></tbody>
-          </table>
-        </div>
-        <div class="legend" id="legend"></div>
-      </div>
+    <div class="stats-bar" id="statsBar" style="display:none"></div>
+    <div class="grid-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th></th>
+            <th>Lundi</th><th>Mardi</th><th>Mercredi</th>
+            <th>Jeudi</th><th>Vendredi</th>
+            <th class="weekend">Samedi</th><th class="weekend">Dimanche</th>
+          </tr>
+        </thead>
+        <tbody id="tbody"></tbody>
+      </table>
     </div>
+    <div class="legend" id="legend"></div>
   </div>
 
   <!-- SLOTS TAB -->
@@ -930,6 +948,25 @@ td.paste-ready:hover{outline-color:var(--blue);background:rgba(133,183,235,.08)}
 
 <div class="drag-ghost" id="dragGhost" style="display:none"></div>
 <div class="toast" id="toast"></div>
+<div class="request-overlay" id="requestOverlay" onclick="closeRequestDrawer(event)"></div>
+<aside class="request-drawer" id="requestDrawer">
+  <div class="request-drawer-head">
+    <div>
+      <h2>Demandes de cours</h2>
+      <p>Laisse une idee de cours ou une envie d'atelier pour aider les professeurs a organiser les prochaines seances.</p>
+    </div>
+    <button class="request-close" onclick="closeRequestDrawer()" aria-label="Fermer les demandes">×</button>
+  </div>
+  <div class="request-panel">
+    <div class="request-form">
+      <input type="text" id="reqName" placeholder="Ton nom (optionnel)" maxlength="40">
+      <textarea id="reqText" placeholder="Ex : J'aimerais un cours de self-defense, de sabre, de katas..." maxlength="220"></textarea>
+      <button class="add-btn" onclick="submitCourseRequest()">Envoyer la demande</button>
+      <p class="warn-text" id="reqWarn"></p>
+    </div>
+    <div class="request-list" id="requestList"></div>
+  </div>
+</aside>
 
 <script src="https://www.gstatic.com/firebasejs/12.12.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/12.12.0/firebase-auth-compat.js"></script>
@@ -1872,6 +1909,26 @@ load();
       return (b.createdAt||0)-(a.createdAt||0);
     });
   }
+  function updateRequestCount(){
+    const count=requestEntries().length;
+    const badge=document.getElementById('requestCount');
+    if(badge)badge.textContent=String(count);
+  }
+  window.openRequestDrawer=function(){
+    const drawer=document.getElementById('requestDrawer');
+    const overlay=document.getElementById('requestOverlay');
+    if(!drawer||!overlay)return;
+    drawer.classList.add('open');
+    overlay.classList.add('open');
+  };
+  window.closeRequestDrawer=function(ev){
+    if(ev&&ev.target&&ev.target.id!=='requestOverlay')return;
+    const drawer=document.getElementById('requestDrawer');
+    const overlay=document.getElementById('requestOverlay');
+    if(!drawer||!overlay)return;
+    drawer.classList.remove('open');
+    overlay.classList.remove('open');
+  };
   function fmtRequestTime(ts){
     return new Date(ts||Date.now()).toLocaleString('fr-FR',{
       day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'
@@ -2049,6 +2106,7 @@ load();
     const list=document.getElementById('requestList');
     if(!list)return;
     const entries=requestEntries();
+    updateRequestCount();
     if(!entries.length){
       list.innerHTML='<div class="request-empty">Aucune demande pour le moment.</div>';
       return;
@@ -2873,6 +2931,9 @@ load();
     });
     document.getElementById('vRegName').addEventListener('keydown',function(ev){
       if(ev.key==='Enter')submitRegistration();
+    });
+    document.addEventListener('keydown',function(ev){
+      if(ev.key==='Escape')closeRequestDrawer();
     });
   }
 
