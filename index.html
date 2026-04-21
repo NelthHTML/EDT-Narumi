@@ -9,9 +9,6 @@
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 
-
-/* ── Version complète - Version : 1.0 ──────────────────────────────────────────────── */
-  
 :root{
   --navy:#0d1117;
   --navy2:#161b22;
@@ -572,7 +569,22 @@ body.slot-dragging{user-select:none}
 .modal-box input:focus,.modal-box select:focus{
   outline:none;border-color:var(--border3);box-shadow:0 0 10px rgba(245,200,66,.12);
 }
-.modal-box select option{background:var(--navy2)}
+.modal-box select,.exam-field select,.slot-builder-field select,.teacher-course-sort{
+  color-scheme:dark;
+}
+.modal-box select option,
+.exam-field select option,
+.slot-builder-field select option,
+.teacher-course-sort option{
+  background:var(--navy2);
+  color:var(--text);
+}
+.modal-box select option:disabled,
+.exam-field select option:disabled,
+.slot-builder-field select option:disabled,
+.teacher-course-sort option:disabled{
+  color:var(--text3);
+}
 
 .modal-actions{display:flex;gap:8px;margin-top:1.5rem;align-items:center}
 .m-back{
@@ -733,7 +745,7 @@ body.slot-dragging{user-select:none}
   font-size:12px;color:var(--text2);padding:8px 0;
 }
 .profile-grid{
-  display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:14px;
+  display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:14px;align-items:start;
 }
 .profile-card{
   position:relative;overflow:hidden;
@@ -743,6 +755,7 @@ body.slot-dragging{user-select:none}
     radial-gradient(circle at bottom left,rgba(245,200,66,.05),transparent 42%),
     linear-gradient(180deg,#1d202f,#111722);
   box-shadow:var(--shadow);
+  align-self:start;
 }
 .profile-card::before{
   content:'';position:absolute;top:0;left:0;right:0;height:2px;
@@ -807,6 +820,25 @@ body.slot-dragging{user-select:none}
 .teacher-course-list{
   display:flex;flex-direction:column;gap:9px;padding:0 12px 12px 12px;
 }
+.teacher-course-tools{
+  display:grid;grid-template-columns:minmax(0,1fr) 150px;gap:10px;padding:0 12px 10px 12px;
+}
+.teacher-course-search,.teacher-course-sort{
+  width:100%;border:1px solid rgba(255,255,255,.08);border-radius:12px;
+  background:rgba(255,255,255,.04);color:var(--text);padding:10px 12px;
+  font-size:13px;font-family:var(--font);min-height:42px;
+}
+.teacher-course-search:focus,.teacher-course-sort:focus{
+  outline:none;border-color:rgba(245,200,66,.45);background:rgba(245,200,66,.04);
+  box-shadow:0 0 0 1px rgba(245,200,66,.08),0 0 18px rgba(245,200,66,.08);
+}
+.teacher-course-search::placeholder{color:rgba(240,237,232,.45)}
+.teacher-course-scroll{
+  max-height:340px;overflow:auto;padding-bottom:2px;
+}
+.teacher-course-results{
+  padding:0 12px 10px 12px;font-size:11px;color:rgba(245,200,66,.72);font-weight:700;letter-spacing:.4px;
+}
 .teacher-course-btn{
   width:100%;border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:12px 14px;
   background:rgba(255,255,255,.03);color:var(--text);text-align:left;cursor:pointer;
@@ -825,6 +857,10 @@ body.slot-dragging{user-select:none}
 .teacher-course-empty{
   margin-top:10px;border:1px dashed rgba(245,200,66,.22);border-radius:14px;padding:14px;
   font-size:12px;color:var(--text2);background:rgba(255,255,255,.02);
+}
+@media (max-width:700px){
+  .teacher-course-tools{grid-template-columns:1fr}
+  .teacher-course-scroll{max-height:260px}
 }
 .profile-actions{
   margin-top:14px;display:flex;gap:8px;flex-wrap:wrap;
@@ -1731,6 +1767,7 @@ let clipboard=null;
 let drag={active:false,didDrag:false,srcKey:null,srcEntry:null,ghost:null,overKey:null};
 let slotDrag={pending:false,active:false,srcIndex:null,insertIndex:null,row:null,list:null,ghost:null,startX:0,startY:0};
 let teacherProfileEditingName=null;
+let teacherCourseViews={};
 let teacherCropState={open:false,index:null,name:'',src:'',image:null,scale:1,minScale:1,x:0,y:0,viewport:320,dragging:false,lastX:0,lastY:0};
 let ctxKey=null;
 let cancelTargetKey=null;
@@ -3868,6 +3905,77 @@ window.__narumiActiveRuntime='booting';
       return (am.slot||0)-(bm.slot||0);
     });
   }
+  function normalizeTeacherCourseSearch(value){
+    return String(value||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim();
+  }
+  function getTeacherCourseView(name){
+    const key=teacherAvatarKey(name);
+    const current=teacherCourseViews[key]||{};
+    return{
+      query:String(current.query||''),
+      sort:['time','name','grade'].includes(current.sort)?current.sort:'time',
+      open:!!current.open
+    };
+  }
+  function setTeacherCourseView(name,patch){
+    const key=teacherAvatarKey(name);
+    teacherCourseViews[key]=Object.assign({},getTeacherCourseView(name),patch||{});
+    return teacherCourseViews[key];
+  }
+  function sortTeacherWeekCourses(refs,sortMode){
+    const sorted=(refs||[]).slice();
+    if(sortMode==='name'){
+      return sorted.sort(function(a,b){
+        const an=String(a&&a.course&&a.course.name||'');
+        const bn=String(b&&b.course&&b.course.name||'');
+        const cmp=an.localeCompare(bn,'fr',{sensitivity:'base'});
+        if(cmp)return cmp;
+        const am=parseKeyMeta(a&&a.key)||{};
+        const bm=parseKeyMeta(b&&b.key)||{};
+        if((am.day||0)!==(bm.day||0))return (am.day||0)-(bm.day||0);
+        return (am.slot||0)-(bm.slot||0);
+      });
+    }
+    if(sortMode==='grade'){
+      return sorted.sort(function(a,b){
+        const ag=String(a&&a.course&&a.course.grade||'Tous grades');
+        const bg=String(b&&b.course&&b.course.grade||'Tous grades');
+        const cmp=ag.localeCompare(bg,'fr',{sensitivity:'base'});
+        if(cmp)return cmp;
+        const an=String(a&&a.course&&a.course.name||'');
+        const bn=String(b&&b.course&&b.course.name||'');
+        return an.localeCompare(bn,'fr',{sensitivity:'base'});
+      });
+    }
+    return sorted.sort(function(a,b){
+      const am=parseKeyMeta(a&&a.key)||{};
+      const bm=parseKeyMeta(b&&b.key)||{};
+      if((am.day||0)!==(bm.day||0))return (am.day||0)-(bm.day||0);
+      return (am.slot||0)-(bm.slot||0);
+    });
+  }
+  function filterTeacherWeekCourses(name,refs,view){
+    const query=normalizeTeacherCourseSearch(view&&view.query);
+    const sorted=sortTeacherWeekCourses(refs,view&&view.sort);
+    if(!query)return sorted;
+    return sorted.filter(function(ref){
+      const course=ref&&ref.course||{};
+      const meta=parseKeyMeta(ref&&ref.key)||{};
+      const slot=slots[meta.slot]||{};
+      const type=courseType(course);
+      const haystack=[
+        name,
+        course.name,
+        course.grade||'Tous grades',
+        course.classe,
+        DAYS[meta.day]||'',
+        slot.start||'',
+        slot.end||'',
+        type&&type.name||''
+      ].join(' ');
+      return normalizeTeacherCourseSearch(haystack).includes(query);
+    });
+  }
   function teacherProfileSubtitle(name){
     const profile=getTeacherProfile(name);
     if(profile.role&&profile.specialty)return profile.role+' • '+profile.specialty;
@@ -4224,6 +4332,9 @@ window.__narumiActiveRuntime='booting';
     host.innerHTML='<div class="profile-grid">'+profiles.map(function(profile){
       const meta=getTeacherProfile(profile.name);
       const courseCountLabel=profile.weekCourses.length===1?'1 cours cette semaine':profile.weekCourses.length+' cours cette semaine';
+      const courseView=getTeacherCourseView(profile.name);
+      const filteredWeekCourses=filterTeacherWeekCourses(profile.name,profile.weekCourses,courseView);
+      const resultLabel=filteredWeekCourses.length===profile.weekCourses.length?courseCountLabel:filteredWeekCourses.length+' / '+profile.weekCourses.length+' cours affiches';
       const typeItems=Object.values(profile.types).sort(function(a,b){
         if(b.count!==a.count)return b.count-a.count;
         return a.name.localeCompare(b.name,'fr',{sensitivity:'base'});
@@ -4261,6 +4372,30 @@ window.__narumiActiveRuntime='booting';
         (isAdmin?'<div class="profile-actions"><button class="teacher-photo-btn" type="button" data-teacher-edit="'+escapeAttr(profile.name)+'">Editer le profil</button>'+(teacherAvatarUrl(profile.name)?'<button class="teacher-photo-btn" type="button" data-teacher-recrop="'+escapeAttr(profile.name)+'">Recadrer la photo</button>':'')+'</div>':'')+
       '</article>';
     }).join('')+'</div>';
+    host.querySelectorAll('[data-teacher-course-panel]').forEach(function(panel){
+      panel.addEventListener('toggle',function(){
+        setTeacherCourseView(panel.getAttribute('data-teacher-course-panel'),{open:panel.open});
+      });
+    });
+    host.querySelectorAll('[data-teacher-course-query]').forEach(function(input){
+      const applySearch=function(){
+        setTeacherCourseView(input.getAttribute('data-teacher-course-query'),{query:input.value,open:true});
+        renderProfiles();
+      };
+      input.addEventListener('change',applySearch);
+      input.addEventListener('keydown',function(ev){
+        if(ev.key==='Enter'){
+          ev.preventDefault();
+          applySearch();
+        }
+      });
+    });
+    host.querySelectorAll('[data-teacher-course-sort]').forEach(function(select){
+      select.addEventListener('change',function(){
+        setTeacherCourseView(select.getAttribute('data-teacher-course-sort'),{sort:select.value,open:true});
+        renderProfiles();
+      });
+    });
     host.querySelectorAll('[data-teacher-course]').forEach(function(button){
       button.addEventListener('click',function(){
         openTeacherCourse(button.getAttribute('data-teacher-course'));
@@ -5947,6 +6082,9 @@ if(clipboard){
     host.innerHTML='<div class="profile-grid">'+profiles.map(function(profile){
       const meta=getTeacherProfile(profile.name);
       const courseCountLabel=profile.weekCourses.length===1?'1 cours cette semaine':profile.weekCourses.length+' cours cette semaine';
+      const courseView=getTeacherCourseView(profile.name);
+      const filteredWeekCourses=filterTeacherWeekCourses(profile.name,profile.weekCourses,courseView);
+      const resultLabel=filteredWeekCourses.length===profile.weekCourses.length?courseCountLabel:filteredWeekCourses.length+' / '+profile.weekCourses.length+' cours affiches';
       const typeItems=Object.values(profile.types).sort(function(a,b){
         if(b.count!==a.count)return b.count-a.count;
         return a.name.localeCompare(b.name,'fr',{sensitivity:'base'});
@@ -5971,7 +6109,7 @@ if(clipboard){
         '<div class="profile-types">'+renderTypeChips(typeItems,'Aucun type renseigne.')+'</div>'+
         '<div class="teacher-week-block">'+
           '<div class="teacher-week-title">Cours prepares cette semaine</div>'+
-          (profile.weekCourses.length?'<details class="teacher-week-accordion"><summary class="teacher-week-summary">'+courseCountLabel+'</summary><div class="teacher-course-list">'+profile.weekCourses.map(function(ref){
+          (profile.weekCourses.length?'<details class="teacher-week-accordion" data-teacher-course-panel="'+escapeAttr(profile.name)+'"'+(courseView.open?' open':'')+'><summary class="teacher-week-summary">'+courseCountLabel+'</summary><div class="teacher-course-tools"><input class="teacher-course-search" type="search" placeholder="Recherche par cours, grade, jour..." value="'+escapeAttr(courseView.query)+'" data-teacher-course-query="'+escapeAttr(profile.name)+'"><select class="teacher-course-sort" data-teacher-course-sort="'+escapeAttr(profile.name)+'"><option value="time"'+(courseView.sort==='time'?' selected':'')+'>Chronologique</option><option value="name"'+(courseView.sort==='name'?' selected':'')+'>Nom</option><option value="grade"'+(courseView.sort==='grade'?' selected':'')+'>Grade</option></select></div><div class="teacher-course-results">'+escapeHtml(resultLabel)+'</div><div class="teacher-course-scroll">'+(filteredWeekCourses.length?'<div class="teacher-course-list">'+filteredWeekCourses.map(function(ref){
             const course=ref.course;
             const metaKey=parseKeyMeta(ref.key);
             const slot=slots[metaKey&&metaKey.slot];
@@ -5980,11 +6118,35 @@ if(clipboard){
               '<div class="teacher-course-name">'+escapeHtml(course.name)+'</div>'+
               '<div class="teacher-course-meta">'+escapeHtml(DAYS[metaKey.day])+' • '+escapeHtml(slot?slot.start+' - '+slot.end:'Horaire a definir')+' • '+escapeHtml(course.grade||'Tous grades')+(regCount?' • '+regCount+' inscrit(s)':'')+'</div>'+
             '</button>';
-          }).join('')+'</div></details>':'<div class="teacher-course-empty">Aucun cours renseigne pour cette semaine.</div>')+
+          }).join('')+'</div>':'<div class="teacher-course-empty" style="margin:0 12px 12px 12px">Aucun cours ne correspond a cette recherche.</div>')+'</div></details>':'<div class="teacher-course-empty">Aucun cours renseigne pour cette semaine.</div>')+
         '</div>'+
         (isAdmin?'<div class="profile-actions"><button class="teacher-photo-btn" type="button" data-teacher-edit="'+escapeAttr(profile.name)+'">Editer le profil</button>'+(teacherAvatarUrl(profile.name)?'<button class="teacher-photo-btn" type="button" data-teacher-recrop="'+escapeAttr(profile.name)+'">Recadrer la photo</button>':'')+'</div>':'')+
       '</article>';
     }).join('')+'</div>';
+    host.querySelectorAll('[data-teacher-course-panel]').forEach(function(panel){
+      panel.addEventListener('toggle',function(){
+        setTeacherCourseView(panel.getAttribute('data-teacher-course-panel'),{open:panel.open});
+      });
+    });
+    host.querySelectorAll('[data-teacher-course-query]').forEach(function(input){
+      const applySearch=function(){
+        setTeacherCourseView(input.getAttribute('data-teacher-course-query'),{query:input.value,open:true});
+        renderProfiles();
+      };
+      input.addEventListener('change',applySearch);
+      input.addEventListener('keydown',function(ev){
+        if(ev.key==='Enter'){
+          ev.preventDefault();
+          applySearch();
+        }
+      });
+    });
+    host.querySelectorAll('[data-teacher-course-sort]').forEach(function(select){
+      select.addEventListener('change',function(){
+        setTeacherCourseView(select.getAttribute('data-teacher-course-sort'),{sort:select.value,open:true});
+        renderProfiles();
+      });
+    });
     host.querySelectorAll('[data-teacher-course]').forEach(function(button){
       button.addEventListener('click',function(){
         openTeacherCourse(button.getAttribute('data-teacher-course'));
