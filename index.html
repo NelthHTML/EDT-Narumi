@@ -290,6 +290,24 @@ body::after{
 }
 .request-item{
   border:1px solid rgba(255,255,255,.08);border-radius:16px;padding:12px;background:rgba(255,255,255,.03);
+  transition:border-color .18s,background .18s,box-shadow .18s;
+}
+.request-item.pending{
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.03);
+}
+.request-item.approved{
+  border-color:rgba(110,214,144,.34);
+  background:
+    radial-gradient(circle at top right,rgba(110,214,144,.14),transparent 45%),
+    linear-gradient(180deg,rgba(110,214,144,.07),rgba(255,255,255,.02));
+  box-shadow:0 12px 28px rgba(24,70,36,.14),inset 0 1px 0 rgba(182,255,204,.05);
+}
+.request-item.rejected{
+  border-color:rgba(255,122,122,.34);
+  background:
+    radial-gradient(circle at top right,rgba(255,122,122,.15),transparent 45%),
+    linear-gradient(180deg,rgba(255,122,122,.06),rgba(255,255,255,.02));
+  box-shadow:0 12px 28px rgba(88,28,28,.14),inset 0 1px 0 rgba(255,206,206,.04);
 }
 .request-item-head{
   display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:10px;
@@ -312,20 +330,46 @@ body::after{
   display:inline-flex;align-items:center;height:22px;padding:0 8px;border-radius:999px;
   background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);font-size:10px;color:var(--text2);font-weight:700;letter-spacing:.4px;text-transform:uppercase;
 }
+.request-status{
+  display:inline-flex;align-items:center;gap:6px;min-height:22px;padding:0 10px;border-radius:999px;
+  border:1px solid rgba(245,200,66,.2);background:rgba(245,200,66,.08);color:var(--gold);
+  font-size:10px;font-weight:700;letter-spacing:.45px;text-transform:uppercase;
+}
+.request-status.approved{
+  border-color:rgba(110,214,144,.28);background:rgba(110,214,144,.14);color:#c8f6d0;
+}
+.request-status.rejected{
+  border-color:rgba(255,122,122,.28);background:rgba(255,122,122,.12);color:#ffc2c2;
+}
 .request-time{
   margin-top:4px;font-size:11px;color:var(--text3);
 }
 .request-body{
   font-size:13px;color:var(--text);line-height:1.55;white-space:pre-wrap;
 }
+.request-decision{
+  margin-top:10px;font-size:11px;color:var(--text2);
+}
 .request-actions{
-  display:flex;justify-content:flex-end;gap:6px;margin-top:10px;
+  display:flex;justify-content:flex-end;gap:6px;flex-wrap:wrap;margin-top:12px;
 }
 .req-btn{
   background:rgba(245,200,66,.08);color:var(--gold);border:1px solid rgba(245,200,66,.22);
   border-radius:10px;padding:7px 11px;font-size:11px;cursor:pointer;font-family:var(--font);font-weight:700;transition:all .15s;
 }
 .req-btn:hover{background:rgba(245,200,66,.15)}
+.req-btn.success{
+  background:rgba(110,214,144,.08);border-color:rgba(110,214,144,.22);color:#c8f6d0;
+}
+.req-btn.success:hover,.req-btn.success.active{
+  background:rgba(110,214,144,.16);border-color:rgba(110,214,144,.36);
+}
+.req-btn.reject{
+  background:rgba(255,122,122,.08);border-color:rgba(255,122,122,.22);color:#ffc2c2;
+}
+.req-btn.reject:hover,.req-btn.reject.active{
+  background:rgba(255,122,122,.16);border-color:rgba(255,122,122,.36);
+}
 .req-btn.danger{
   background:rgba(255,120,120,.07);border-color:rgba(255,120,120,.2);color:#ffb4b4;
 }
@@ -1062,6 +1106,11 @@ body.slot-dragging{user-select:none}
 .exam-hero-note,.exam-composer-note,.quick-builder-note{
   margin-top:8px;font-size:12px;color:var(--text2);line-height:1.5;
 }
+.exam-view-note{
+  margin-top:12px;padding:10px 12px;border-radius:12px;
+  border:1px solid rgba(140,200,255,.22);background:rgba(100,180,255,.08);
+  color:#c8e2ff;font-size:12px;line-height:1.5;
+}
 .exam-stat-grid{
   margin-top:18px;display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;
 }
@@ -1559,11 +1608,12 @@ body.slot-dragging{user-select:none}
       <div class="exam-hero">
         <div class="exam-hero-panel">
           <div class="exam-hero-title">📛 Mur des examens</div>
-          <div class="exam-hero-note">Chaque examen programme ici apparait automatiquement sur toutes les semaines du planning. Tu peux ajouter plusieurs rendez-vous pour un meme type d'examen dans la semaine.</div>
+          <div class="exam-hero-note" id="examHeroNote">Chaque examen programme ici apparait automatiquement sur toutes les semaines du planning. Tu peux ajouter plusieurs rendez-vous pour un meme type d'examen dans la semaine.</div>
+          <div class="exam-view-note" id="examViewerNote" style="display:none"></div>
           <div class="exam-stat-grid" id="examSummary"></div>
           <div class="exam-live-wall" id="examCountdownWall"></div>
         </div>
-        <div class="exam-composer">
+        <div class="exam-composer" id="examComposer">
           <div class="exam-composer-head">
             <div>
               <div class="exam-composer-title">📝 Nouvelle occurrence</div>
@@ -3370,10 +3420,28 @@ window.__narumiActiveRuntime='booting';
         id:id,
         name:String(value&&value.name||'Anonyme').trim()||'Anonyme',
         text:text,
-        createdAt:Number(value&&value.createdAt)||Date.now()
+        createdAt:Number(value&&value.createdAt)||Date.now(),
+        status:normalizeRequestStatus(value&&value.status),
+        reviewedAt:Number(value&&value.reviewedAt)||0
       };
     });
     return out;
+  }
+  function normalizeRequestStatus(value){
+    const raw=String(value||'').toLowerCase();
+    if(raw==='approved'||raw==='validated'||raw==='accepted'||raw==='valid')return'approved';
+    if(raw==='rejected'||raw==='refused'||raw==='denied')return'rejected';
+    return'pending';
+  }
+  function requestStatusMeta(status){
+    switch(normalizeRequestStatus(status)){
+      case'approved':
+        return{key:'approved',icon:'&#10003;',label:'Valid&eacute;e',toast:'validee'};
+      case'rejected':
+        return{key:'rejected',icon:'&#10005;',label:'Refus&eacute;e',toast:'refusee'};
+      default:
+        return{key:'pending',icon:'&#9203;',label:'En attente',toast:'en attente'};
+    }
   }
   function normalizeRequestSearch(value){
     return String(value||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim();
@@ -3743,7 +3811,11 @@ window.__narumiActiveRuntime='booting';
       const displayName=String(entry&&entry.name||'Anonyme').trim()||'Anonyme';
       const normalizedName=normalizeRequestSearch(displayName);
       const initial=(displayName.charAt(0)||'?').toUpperCase();
-      return '<article class="request-item">'+
+      const statusMeta=requestStatusMeta(entry&&entry.status);
+      const decisionText=entry&&entry.reviewedAt&&statusMeta.key!=='pending'
+        ?'<div class="request-decision">Decision prise le '+escapeHtml(fmtRequestTime(entry.reviewedAt))+'</div>'
+        :'';
+      return '<article class="request-item '+statusMeta.key+'">'+
         '<div class="request-item-head">'+
           '<div class="request-author-wrap">'+
             '<div class="request-avatar">'+escapeHtml(initial)+'</div>'+
@@ -3751,13 +3823,19 @@ window.__narumiActiveRuntime='booting';
               '<div class="request-author-row">'+
                 '<span class="request-author">'+escapeHtml(displayName)+'</span>'+
                 (normalizedName==='anonyme'?'<span class="request-badge">Anonyme</span>':'')+
+                '<span class="request-status '+statusMeta.key+'">'+statusMeta.icon+' '+statusMeta.label+'</span>'+
               '</div>'+
               '<div class="request-time">'+escapeHtml(fmtRequestTime(entry.createdAt))+'</div>'+
             '</div>'+
           '</div>'+
-          (isAdmin?'<button class="req-btn danger" onclick="deleteCourseRequest(\''+entry.id+'\')">Supprimer</button>':'')+
         '</div>'+
         '<div class="request-body">'+escapeHtml(entry.text)+'</div>'+
+        decisionText+
+        (isAdmin?'<div class="request-actions">'+
+          '<button class="req-btn success'+(statusMeta.key==='approved'?' active':'')+'" onclick="setCourseRequestStatus(\''+entry.id+'\',\'approved\')">Valider</button>'+
+          '<button class="req-btn reject'+(statusMeta.key==='rejected'?' active':'')+'" onclick="setCourseRequestStatus(\''+entry.id+'\',\'rejected\')">Refuser</button>'+
+          '<button class="req-btn danger" onclick="deleteCourseRequest(\''+entry.id+'\')">Supprimer</button>'+
+        '</div>':'')+
       '</article>';
     }).join('');
   }
@@ -4183,13 +4261,27 @@ window.__narumiActiveRuntime='booting';
   window.renderExamList=function(){
     const host=document.getElementById('examList');
     if(!host)return;
+    if(!isAdmin)editingExamId=null;
     const saveBtn=document.getElementById('examSaveBtn');
+    const composer=document.getElementById('examComposer');
+    const viewerNote=document.getElementById('examViewerNote');
+    const heroNote=document.getElementById('examHeroNote');
     const current=editingExamId?findExamById(editingExamId):null;
     if(editingExamId&&!current)editingExamId=null;
     const state=currentExamFormState();
     const nextType=current&&current.type?current.type:state.type;
     const nextDay=current&&Number.isInteger(current.day)?current.day:(Number.isInteger(state.day)?state.day:5);
     const nextTime=current&&current.time?current.time:state.time;
+    if(composer)composer.style.display=isAdmin?'':'none';
+    if(viewerNote){
+      viewerNote.style.display=isAdmin?'none':'';
+      viewerNote.textContent=isAdmin?'':'Vue lecture seule : les eleves peuvent consulter les examens ici, mais seuls les sensei peuvent ajouter ou modifier les occurrences.';
+    }
+    if(heroNote){
+      heroNote.textContent=isAdmin
+        ?'Chaque examen programme ici apparait automatiquement sur toutes les semaines du planning. Tu peux ajouter plusieurs rendez-vous pour un meme type d\'examen dans la semaine.'
+        :'Chaque examen programme ici apparait automatiquement sur toutes les semaines du planning. Les horaires sont visibles par tous, mais la gestion reste reservee aux sensei.';
+    }
     buildExamTypeSelect(nextType);
     buildExamDaySelect(nextDay);
     const timeInput=document.getElementById('newExamTime');
@@ -4198,7 +4290,7 @@ window.__narumiActiveRuntime='booting';
     renderExamSummary();
     renderExamPreview();
     if(!exams.length){
-      host.innerHTML='<div class="exam-empty-card">Aucun examen programme pour le moment. Ajoute une occurrence a droite pour la voir apparaitre ici avec sa timeline par type.</div>';
+      host.innerHTML='<div class="exam-empty-card">'+(isAdmin?'Aucun examen programme pour le moment. Ajoute une occurrence a droite pour la voir apparaitre ici avec sa timeline par type.':'Aucun examen programme pour le moment. Les prochains examens apparaitront ici en lecture seule.')+'</div>';
       return;
     }
     const now=new Date();
@@ -4206,6 +4298,9 @@ window.__narumiActiveRuntime='booting';
       const first=group.items[0];
       const nextGroupExam=nextUpcomingExam(group.items,now);
       const safeType=group.type.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+      const itemActions=isAdmin?'<div class="exam-item-actions">'+
+        '<button class="req-btn" onclick="prepareExamType(\''+safeType+'\')">Ajouter un autre horaire</button>'+
+      '</div>':'';
       return '<article class="exam-item">'+
         '<div class="exam-item-head"><span class="exam-badge">🎯 '+group.items.length+' occurrence'+(group.items.length>1?'s':'')+'</span><span class="exam-badge">🕒 '+escapeHtml(formatTimeLabel(first.time))+'</span></div>'+
         '<div class="exam-item-title">'+escapeHtml(group.type)+'</div>'+
@@ -4213,21 +4308,20 @@ window.__narumiActiveRuntime='booting';
         '<div class="exam-item-meta">📛 Programme en recurrence sur toutes les semaines. Tu peux empiler plusieurs horaires pour ce meme type.</div>'+
         '<div class="exam-occurrences">'+group.items.map(function(exam){
           const info=examCountdownInfo(exam,now);
+          const occurrenceActions=isAdmin?'<div class="exam-occurrence-actions">'+
+            '<button class="req-btn" onclick="editExam(\''+exam.id+'\')">Modifier</button>'+
+            '<button class="req-btn" onclick="removeExam(\''+exam.id+'\')">Supprimer</button>'+
+          '</div>':'';
           return '<div class="exam-occurrence">'+
             '<div class="exam-occurrence-meta">'+
               (info?'<div class="exam-occurrence-countdown'+(info.isSoon?' soon':'')+'">&#9203; '+escapeHtml(info.countdownLabel)+' - '+escapeHtml(info.dateLabel)+'</div>':'')+
               '<div class="exam-occurrence-day">🗓️ '+escapeHtml(DAYS[exam.day])+'</div>'+
               '<div class="exam-occurrence-time">🕒 '+escapeHtml(formatTimeLabel(exam.time))+'</div>'+
             '</div>'+
-            '<div class="exam-occurrence-actions">'+
-              '<button class="req-btn" onclick="editExam(\''+exam.id+'\')">Modifier</button>'+
-              '<button class="req-btn" onclick="removeExam(\''+exam.id+'\')">Supprimer</button>'+
-            '</div>'+
+            occurrenceActions+
           '</div>';
         }).join('')+'</div>'+
-        '<div class="exam-item-actions">'+
-          '<button class="req-btn" onclick="prepareExamType(\''+safeType+'\')">Ajouter un autre horaire</button>'+
-        '</div>'+
+        itemActions+
       '</article>';
     }).join('');
   };
@@ -5822,7 +5916,7 @@ if(clipboard){
     }
     warn.textContent='';
     const id=uid('req');
-    const payload={id:id,name:name,text:text,createdAt:Date.now()};
+    const payload={id:id,name:name,text:text,createdAt:Date.now(),status:'pending',reviewedAt:0};
     if(cloudEnabled&&cloudRequestsRef){
       try{
         await cloudRequestsRef.child(id).set(payload);
@@ -5850,6 +5944,38 @@ if(clipboard){
     updateRequestComposerState();
     renderRequests();
     showToast('Demande envoyee !');
+  };
+
+  window.setCourseRequestStatus=async function(requestId,status){
+    if(!isAdmin||!requestId)return;
+    const current=requestsData[requestId];
+    if(!current)return;
+    const nextStatus=normalizeRequestStatus(status);
+    const nextReviewTime=nextStatus==='pending'?0:Date.now();
+    const previous=Object.assign({},current);
+    const next=Object.assign({},current,{
+      status:nextStatus,
+      reviewedAt:nextReviewTime
+    });
+    requestsData[requestId]=next;
+    persist('requests',requestsData);
+    syncSharedVars();
+    renderRequests();
+    if(cloudEnabled&&cloudRequestsRef){
+      try{
+        await cloudRequestsRef.child(requestId).set(next);
+      }catch(err){
+        console.error(err);
+        requestsData[requestId]=previous;
+        persist('requests',requestsData);
+        syncSharedVars();
+        renderRequests();
+        showToast('Statut non synchronise.');
+        return;
+      }
+    }
+    addAdminLog('Demande '+requestStatusMeta(nextStatus).toast,'La demande de "'+String(current.name||'Anonyme')+'" a ete '+requestStatusMeta(nextStatus).toast+'.');
+    showToast('Demande '+requestStatusMeta(nextStatus).toast+'.');
   };
 
   window.deleteCourseRequest=async function(requestId){
@@ -6819,13 +6945,13 @@ if(clipboard){
       tabBar.innerHTML=[scheduleTab,examsTab,slotsTab,typesTab,statsTab,profilesTab,requestsTab,adminTab].join('');
     }else if(adminSessionActive&&viewerPreview){
       badge.innerHTML='<div class="viewer-badge" onclick="switchTab(\'schedule\')">Apercu eleve</div>';
-      tabBar.innerHTML=[scheduleTab,profilesTab,requestsTab,adminTab].join('');
+      tabBar.innerHTML=[scheduleTab,examsTab,profilesTab,requestsTab,adminTab].join('');
     }else{
       badge.innerHTML='<div class="viewer-badge" onclick="openLoginOverlay()">&#128274; Visiteur</div>';
-      tabBar.innerHTML=[scheduleTab,profilesTab,requestsTab].join('');
+      tabBar.innerHTML=[scheduleTab,examsTab,profilesTab,requestsTab].join('');
     }
     if(!['schedule','exams','slots','types','stats','profiles','requests','admin'].includes(activeTab))activeTab='schedule';
-    if(!isAdmin&&activeTab!=='schedule'&&activeTab!=='profiles'&&activeTab!=='requests')activeTab='schedule';
+    if(!isAdmin&&activeTab!=='schedule'&&activeTab!=='exams'&&activeTab!=='profiles'&&activeTab!=='requests')activeTab='schedule';
     switchTab(activeTab);
     updateRequestCount();
     if(adminSessionActive&&!previousSession)addAdminLog('Connexion admin','Session admin ouverte.');
