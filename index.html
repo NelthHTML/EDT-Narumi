@@ -149,15 +149,15 @@ body::after{
   background:var(--navy2);box-shadow:var(--shadow);overflow-x:auto;
 }
 .request-toggle{
-  background:rgba(245,200,66,.09);border:1px solid rgba(245,200,66,.22);
-  color:var(--gold);border-radius:8px;padding:5px 14px;cursor:pointer;
+  background:linear-gradient(135deg,rgba(245,200,66,.12),rgba(255,120,82,.08));
+  border:1px solid rgba(245,200,66,.22);color:var(--gold);border-radius:10px;padding:6px 14px;cursor:pointer;
   font-size:11px;font-weight:700;letter-spacing:.5px;white-space:nowrap;
-  transition:all .15s;display:flex;align-items:center;gap:8px;
+  transition:all .15s;display:flex;align-items:center;gap:8px;box-shadow:0 10px 24px rgba(0,0,0,.14);
 }
-.request-toggle:hover{background:rgba(245,200,66,.18);box-shadow:0 0 12px rgba(245,200,66,.2)}
+.request-toggle:hover{background:linear-gradient(135deg,rgba(245,200,66,.18),rgba(255,120,82,.12));box-shadow:0 0 12px rgba(245,200,66,.2)}
 .request-count{
-  min-width:20px;height:20px;border-radius:999px;background:rgba(255,255,255,.08);
-  display:inline-flex;align-items:center;justify-content:center;font-size:10px;color:var(--text);
+  min-width:22px;height:22px;border-radius:999px;background:rgba(255,255,255,.08);
+  display:inline-flex;align-items:center;justify-content:center;font-size:10px;color:var(--text);padding:0 6px;
 }
 .request-overlay{
   display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:115;
@@ -165,21 +165,30 @@ body::after{
 }
 .request-overlay.open{display:block}
 .request-drawer{
-  position:fixed;top:0;right:0;bottom:0;width:min(420px,100vw);
-  background:linear-gradient(180deg,#0f1420,#121826);border-left:1px solid var(--border3);
+  position:fixed;top:0;right:0;bottom:0;width:min(500px,100vw);
+  background:
+    radial-gradient(circle at top right,rgba(255,120,82,.1),transparent 26%),
+    radial-gradient(circle at top left,rgba(245,200,66,.08),transparent 28%),
+    linear-gradient(180deg,#0f1420,#121826);
+  border-left:1px solid rgba(245,200,66,.18);
   box-shadow:var(--shadow);z-index:120;transform:translateX(100%);transition:transform .2s ease;
   display:flex;flex-direction:column;
 }
 .request-drawer.open{transform:translateX(0)}
 .request-drawer-head{
   display:flex;align-items:flex-start;justify-content:space-between;gap:12px;
-  padding:1rem 1rem .2rem 1rem;border-bottom:1px solid var(--border2);
+  padding:1.1rem 1.05rem .9rem 1.05rem;border-bottom:1px solid rgba(255,255,255,.06);
+}
+.request-head-kicker{
+  display:inline-flex;align-items:center;gap:8px;padding:6px 10px;border-radius:999px;
+  background:rgba(245,200,66,.08);border:1px solid rgba(245,200,66,.18);
+  font-size:10px;color:rgba(245,200,66,.78);font-weight:700;letter-spacing:.65px;text-transform:uppercase;
 }
 .request-drawer-head h2{
-  font-family:'Cinzel',serif;font-size:15px;font-weight:700;color:var(--gold);letter-spacing:.5px;
+  font-family:'Cinzel',serif;font-size:18px;font-weight:700;color:var(--gold);letter-spacing:.5px;margin-top:12px;
 }
 .request-drawer-head p{
-  margin-top:4px;font-size:12px;color:var(--text2);line-height:1.4;
+  margin-top:8px;font-size:13px;color:var(--text2);line-height:1.5;max-width:38ch;
 }
 .request-close{
   background:none;border:1px solid var(--border2);color:var(--text2);border-radius:8px;
@@ -187,57 +196,170 @@ body::after{
 }
 .request-close:hover{background:rgba(255,255,255,.05);color:var(--text)}
 .request-panel{
-  padding:1rem;overflow:auto;flex:1;
+  padding:1rem;overflow:auto;flex:1;display:flex;flex-direction:column;gap:14px;
 }
-.request-panel h2{
-  font-family:'Cinzel',serif;font-size:15px;font-weight:700;color:var(--gold);
-  margin-bottom:.4rem;letter-spacing:.5px;
+.request-hero,.request-compose,.request-feed{
+  position:relative;overflow:hidden;border:1px solid rgba(245,200,66,.14);border-radius:18px;
+  background:linear-gradient(180deg,rgba(255,255,255,.03),rgba(255,255,255,.015));
+  box-shadow:0 18px 36px rgba(0,0,0,.16);
 }
-.request-help{
-  font-size:12px;color:var(--text2);line-height:1.45;margin-bottom:.85rem;
+.request-hero{padding:16px}
+.request-hero::before,.request-compose::before,.request-feed::before{
+  content:'';position:absolute;left:0;right:0;top:0;height:1px;background:linear-gradient(90deg,transparent,rgba(245,200,66,.45),transparent);
+}
+.request-hero h3,.request-compose h3,.request-feed h3{
+  font-family:'Cinzel',serif;font-size:16px;font-weight:700;color:var(--gold);letter-spacing:.45px;
+}
+.request-hero p,.request-compose-note,.request-feed p{
+  font-size:12px;color:var(--text2);line-height:1.5;
+}
+.request-hero-grid{
+  display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-top:14px;
+}
+.request-hero-stat{
+  border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:12px;background:rgba(255,255,255,.03);
+}
+.request-hero-stat strong{
+  display:block;font-size:17px;color:var(--text);
+}
+.request-hero-stat span{
+  display:block;margin-top:4px;font-size:10px;color:var(--text2);line-height:1.45;text-transform:uppercase;letter-spacing:.55px;
+}
+.request-compose{padding:16px}
+.request-compose-head,.request-feed-head{
+  display:flex;align-items:flex-start;justify-content:space-between;gap:12px;
+}
+.request-counter{
+  flex-shrink:0;display:inline-flex;align-items:center;justify-content:center;min-width:68px;height:30px;
+  padding:0 10px;border-radius:999px;background:rgba(245,200,66,.08);border:1px solid rgba(245,200,66,.16);
+  font-size:11px;color:var(--gold);font-weight:700;
+}
+.request-counter.near-limit{border-color:rgba(255,120,82,.4);color:#ffd1c2}
+.request-guidelines{
+  display:flex;flex-wrap:wrap;gap:8px;margin-top:12px;
+}
+.request-guideline{
+  display:inline-flex;align-items:center;gap:8px;padding:7px 11px;border-radius:999px;
+  background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08);font-size:11px;color:var(--text2);
+}
+.request-chip-row{
+  display:flex;flex-wrap:wrap;gap:8px;margin-top:14px;
+}
+.request-chip{
+  background:rgba(255,255,255,.04);color:var(--text);border:1px solid rgba(255,255,255,.08);
+  border-radius:999px;padding:8px 12px;font-size:12px;cursor:pointer;font-family:var(--font);transition:all .15s;
+}
+.request-chip:hover{
+  border-color:rgba(245,200,66,.32);background:rgba(245,200,66,.08);color:var(--gold);transform:translateY(-1px);
 }
 .request-form{
-  display:flex;flex-direction:column;gap:8px;margin-bottom:1rem;
+  display:flex;flex-direction:column;gap:10px;margin-top:16px;
 }
-.request-form input,.request-form textarea{
-  width:100%;padding:9px 12px;border-radius:var(--radius);
-  border:1px solid var(--border2);background:var(--navy3);color:var(--text);
-  font-size:13px;font-family:var(--font);transition:border-color .15s;
+.request-form label,.request-search-block label{
+  display:block;font-size:10px;color:rgba(245,200,66,.62);font-weight:700;letter-spacing:.78px;text-transform:uppercase;
+}
+.request-form input,.request-form textarea,.request-search{
+  width:100%;padding:11px 12px;border-radius:12px;border:1px solid rgba(255,255,255,.08);
+  background:rgba(255,255,255,.04);color:var(--text);font-size:13px;font-family:var(--font);transition:border-color .15s,box-shadow .15s,background .15s;
 }
 .request-form textarea{
-  min-height:104px;resize:vertical;
+  min-height:130px;resize:vertical;line-height:1.5;
 }
-.request-form input:focus,.request-form textarea:focus{
-  outline:none;border-color:var(--border3);box-shadow:0 0 10px rgba(245,200,66,.12);
+.request-form input:focus,.request-form textarea:focus,.request-search:focus{
+  outline:none;border-color:rgba(245,200,66,.42);background:rgba(245,200,66,.04);
+  box-shadow:0 0 0 1px rgba(245,200,66,.08),0 0 18px rgba(245,200,66,.08);
+}
+.request-submit-row{
+  display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;
+}
+.request-submit-note{
+  font-size:11px;color:var(--text2);line-height:1.45;max-width:26ch;
+}
+.request-feed{padding:16px}
+.request-feed-head{
+  margin-bottom:12px;
+}
+.request-search-block{
+  min-width:180px;flex:1;max-width:220px;
+}
+.request-search-block label{
+  margin-bottom:6px;
 }
 .request-list{
-  display:flex;flex-direction:column;gap:8px;max-height:560px;overflow:auto;
+  display:flex;flex-direction:column;gap:10px;max-height:380px;overflow:auto;padding-right:2px;
 }
 .request-item{
-  border:1px solid var(--border2);border-radius:12px;padding:10px 12px;background:rgba(255,255,255,.03);
+  border:1px solid rgba(255,255,255,.08);border-radius:16px;padding:12px;background:rgba(255,255,255,.03);
 }
-.request-meta{
-  display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:6px;
+.request-item-head{
+  display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:10px;
+}
+.request-author-wrap{
+  display:flex;align-items:flex-start;gap:10px;min-width:0;
+}
+.request-avatar{
+  width:38px;height:38px;border-radius:12px;display:flex;align-items:center;justify-content:center;
+  background:linear-gradient(135deg,rgba(245,200,66,.22),rgba(255,120,82,.14));border:1px solid rgba(245,200,66,.18);
+  color:var(--gold);font-weight:700;font-size:14px;flex-shrink:0;
+}
+.request-author-row{
+  display:flex;align-items:center;gap:8px;flex-wrap:wrap;
 }
 .request-author{
-  font-size:12px;font-weight:700;color:var(--gold);
+  font-size:13px;font-weight:700;color:var(--gold);
+}
+.request-badge{
+  display:inline-flex;align-items:center;height:22px;padding:0 8px;border-radius:999px;
+  background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);font-size:10px;color:var(--text2);font-weight:700;letter-spacing:.4px;text-transform:uppercase;
 }
 .request-time{
-  font-size:10px;color:var(--text3);
+  margin-top:4px;font-size:11px;color:var(--text3);
 }
 .request-body{
-  font-size:13px;color:var(--text);line-height:1.45;white-space:pre-wrap;
+  font-size:13px;color:var(--text);line-height:1.55;white-space:pre-wrap;
 }
 .request-actions{
-  display:flex;justify-content:flex-end;gap:6px;margin-top:8px;
+  display:flex;justify-content:flex-end;gap:6px;margin-top:10px;
 }
 .req-btn{
-  background:rgba(245,200,66,.08);color:var(--gold);border:1px solid var(--border3);
-  border-radius:8px;padding:5px 10px;font-size:11px;cursor:pointer;font-family:var(--font);font-weight:700;
+  background:rgba(245,200,66,.08);color:var(--gold);border:1px solid rgba(245,200,66,.22);
+  border-radius:10px;padding:7px 11px;font-size:11px;cursor:pointer;font-family:var(--font);font-weight:700;transition:all .15s;
 }
 .req-btn:hover{background:rgba(245,200,66,.15)}
+.req-btn.danger{
+  background:rgba(255,120,120,.07);border-color:rgba(255,120,120,.2);color:#ffb4b4;
+}
+.req-btn.danger:hover{background:rgba(255,120,120,.12)}
 .request-empty{
-  font-size:12px;color:var(--text2);padding:6px 0;
+  border:1px dashed rgba(245,200,66,.18);border-radius:16px;padding:18px;background:rgba(255,255,255,.02);
+  font-size:13px;color:var(--text2);line-height:1.55;text-align:center;
+}
+.request-page-shell{
+  display:flex;flex-direction:column;gap:14px;
+}
+.request-page-head{
+  position:relative;overflow:hidden;border:1px solid rgba(245,200,66,.14);border-radius:18px;
+  background:linear-gradient(180deg,rgba(255,255,255,.03),rgba(255,255,255,.015));
+  box-shadow:0 18px 36px rgba(0,0,0,.16);
+}
+.request-page-head::before{
+  content:'';position:absolute;left:0;right:0;top:0;height:1px;background:linear-gradient(90deg,transparent,rgba(245,200,66,.45),transparent);
+}
+.request-page-panel{
+  padding:0;overflow:visible;
+}
+.tab-counter{
+  display:inline-flex;align-items:center;justify-content:center;min-width:18px;height:18px;
+  margin-left:6px;padding:0 6px;border-radius:999px;background:rgba(255,255,255,.08);
+  color:inherit;font-size:10px;font-weight:700;line-height:1;
+}
+.tab.active .tab-counter{
+  background:rgba(245,200,66,.14);
+}
+@media (max-width:680px){
+  .request-hero-grid{grid-template-columns:1fr}
+  .request-compose-head,.request-feed-head{flex-direction:column}
+  .request-search-block{max-width:none;width:100%}
 }
 table{width:100%;border-collapse:collapse;min-width:720px;table-layout:fixed}
 
@@ -956,6 +1078,79 @@ body.slot-dragging{user-select:none}
 .exam-stat-label{
   margin-top:6px;font-size:10px;color:var(--text2);text-transform:uppercase;letter-spacing:.7px;font-weight:700;
 }
+.exam-stat-note{
+  margin-top:8px;font-size:11px;color:var(--text2);line-height:1.45;
+}
+.exam-stat-value.countdown{
+  font-size:15px;line-height:1.25;
+}
+.exam-live-wall{
+  margin-top:16px;min-height:220px;border:1px solid rgba(245,200,66,.14);border-radius:18px;padding:18px;
+  background:
+    radial-gradient(circle at top right,rgba(245,200,66,.08),transparent 34%),
+    radial-gradient(circle at bottom left,rgba(255,120,82,.10),transparent 42%),
+    linear-gradient(180deg,rgba(12,16,28,.88),rgba(19,24,38,.98));
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.03),0 20px 34px rgba(0,0,0,.16);
+  display:flex;flex-direction:column;justify-content:center;
+}
+.exam-live-wall.empty{
+  justify-content:center;align-items:center;text-align:center;color:var(--text2);
+}
+.exam-live-head{
+  display:flex;align-items:flex-start;justify-content:space-between;gap:14px;flex-wrap:wrap;
+}
+.exam-live-kicker{
+  display:inline-flex;align-items:center;gap:8px;padding:6px 11px;border-radius:999px;
+  border:1px solid rgba(245,200,66,.18);background:rgba(245,200,66,.06);
+  color:rgba(245,200,66,.82);font-size:10px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;
+}
+.exam-live-target{
+  margin-top:12px;font-family:'Cinzel',serif;font-size:24px;color:#fff4da;font-weight:700;letter-spacing:.4px;
+}
+.exam-live-sub{
+  margin-top:8px;font-size:13px;color:var(--text2);line-height:1.5;max-width:40ch;
+}
+.exam-live-meta{
+  display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:14px;
+}
+.exam-live-chip{
+  display:inline-flex;align-items:center;gap:6px;padding:7px 11px;border-radius:999px;
+  border:1px solid rgba(245,200,66,.18);background:rgba(255,255,255,.04);
+  color:#f6d4c1;font-size:11px;font-weight:700;letter-spacing:.4px;
+}
+.exam-live-clock{
+  margin-top:20px;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;
+}
+.exam-live-unit{
+  border:1px solid rgba(245,200,66,.14);border-radius:16px;padding:16px 10px 14px 10px;text-align:center;
+  background:
+    radial-gradient(circle at top,rgba(255,210,120,.08),transparent 42%),
+    linear-gradient(180deg,rgba(255,255,255,.045),rgba(255,255,255,.02));
+}
+.exam-live-value{
+  display:block;font-family:'Cinzel',serif;font-size:34px;line-height:1;color:#ffefc8;font-weight:700;letter-spacing:1px;
+}
+.exam-live-unit.seconds .exam-live-value{
+  color:#ffd19f;
+}
+.exam-live-label{
+  display:block;margin-top:9px;font-size:10px;color:var(--text2);font-weight:700;letter-spacing:.8px;text-transform:uppercase;
+}
+.exam-live-footer{
+  margin-top:16px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;
+  font-size:12px;color:var(--text2);
+}
+.exam-live-date{
+  color:#f6d4c1;font-weight:700;
+}
+.exam-live-pulse{
+  width:10px;height:10px;border-radius:999px;background:#ff8a5c;box-shadow:0 0 0 0 rgba(255,138,92,.6);animation:examPulse 1.4s infinite;
+}
+@keyframes examPulse{
+  0%{box-shadow:0 0 0 0 rgba(255,138,92,.55)}
+  70%{box-shadow:0 0 0 12px rgba(255,138,92,0)}
+  100%{box-shadow:0 0 0 0 rgba(255,138,92,0)}
+}
 .exam-composer{
   position:relative;overflow:hidden;
   background:
@@ -1046,6 +1241,9 @@ body.slot-dragging{user-select:none}
 .exam-item-meta{
   margin-top:8px;font-size:12px;color:var(--text2);line-height:1.5;
 }
+.exam-item-countdown{
+  color:#ffd7b4;
+}
 .exam-occurrences{
   display:flex;flex-direction:column;gap:8px;margin-top:12px;
 }
@@ -1061,6 +1259,12 @@ body.slot-dragging{user-select:none}
 }
 .exam-occurrence-time{
   margin-top:3px;font-size:11px;color:var(--text2);
+}
+.exam-occurrence-countdown{
+  margin-top:6px;font-size:11px;color:#ffd7b4;line-height:1.45;
+}
+.exam-occurrence-countdown.soon{
+  color:#ffe9a8;
 }
 .exam-occurrence-actions,.exam-item-actions,.slot-builder-actions{
   display:flex;align-items:center;gap:8px;flex-wrap:wrap;
@@ -1290,6 +1494,9 @@ body.slot-dragging{user-select:none}
   .request-drawer{width:100vw}
   .exam-hero{grid-template-columns:1fr}
   .exam-form-grid{grid-template-columns:1fr}
+  .exam-live-clock{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .exam-live-target{font-size:20px}
+  .exam-live-value{font-size:28px}
   .profile-editor-grid{grid-template-columns:1fr}
   .teacher-profile-head{flex-direction:column}
   .teacher-avatar.large{width:96px;height:96px;border-radius:24px}
@@ -1318,10 +1525,6 @@ body.slot-dragging{user-select:none}
         <button class="week-btn" onclick="chgWeek(1)">&#8250;</button>
         <input type="date" class="week-picker" id="weekPicker" aria-label="Choisir une semaine">
       </div>
-      <button class="request-toggle" id="requestToggleBtn" onclick="openRequestDrawer()">
-        <span>Demandes</span>
-        <span class="request-count" id="requestCount">0</span>
-      </button>
       <div class="presence-badge local" id="presenceBadge">👥 0 en ligne</div>
       <div class="sync-badge local" id="syncBadge">Mode local</div>
       <div id="authBadge"></div>
@@ -1358,6 +1561,7 @@ body.slot-dragging{user-select:none}
           <div class="exam-hero-title">📛 Mur des examens</div>
           <div class="exam-hero-note">Chaque examen programme ici apparait automatiquement sur toutes les semaines du planning. Tu peux ajouter plusieurs rendez-vous pour un meme type d'examen dans la semaine.</div>
           <div class="exam-stat-grid" id="examSummary"></div>
+          <div class="exam-live-wall" id="examCountdownWall"></div>
         </div>
         <div class="exam-composer">
           <div class="exam-composer-head">
@@ -1505,6 +1709,83 @@ body.slot-dragging{user-select:none}
       </div>
       <p class="cloud-note" id="profilesSummaryNote">Chaque fiche rassemble le profil du professeur et ses cours de la semaine. Clique sur un cours pour ouvrir l'inscription.</p>
       <div id="profilesDetail"></div>
+    </div>
+  </div>
+
+  <div id="tabRequests" style="display:none">
+    <div class="request-page-shell">
+      <div class="request-drawer-head request-page-head">
+        <div>
+          <div class="request-head-kicker">Boite a idees eleves</div>
+          <h2>Demandes de cours</h2>
+          <p>Une envie d'atelier, de revision ou de nouveau theme ? Laisse une idee claire et les professeurs pourront s'en inspirer pour la semaine.</p>
+        </div>
+      </div>
+      <div class="request-panel request-page-panel">
+        <section class="request-hero">
+          <h3>Une boite simple pour proposer</h3>
+          <p>Le but n'est pas d'ecrire un roman. Une idee nette suffit pour aider les sensei a preparer un cours utile et motivant.</p>
+          <div class="request-hero-grid">
+            <div class="request-hero-stat">
+              <strong id="requestHeroCount">0</strong>
+              <span>idees deja deposees</span>
+            </div>
+            <div class="request-hero-stat">
+              <strong>Anonyme</strong>
+              <span>ton nom reste optionnel</span>
+            </div>
+            <div class="request-hero-stat">
+              <strong>1 idee claire</strong>
+              <span>plus facile a programmer</span>
+            </div>
+          </div>
+          <div class="request-guidelines">
+            <span class="request-guideline">Un besoin ou un objectif precis</span>
+            <span class="request-guideline">Un theme qui te motive</span>
+            <span class="request-guideline">Une revision que tu aimerais revoir</span>
+          </div>
+        </section>
+        <section class="request-compose">
+          <div class="request-compose-head">
+            <div>
+              <h3>Proposer une idee</h3>
+              <p class="request-compose-note">Tu peux demander un cours technique, un atelier plus fun, une revision d'examen ou un theme lie a ta progression.</p>
+            </div>
+            <div class="request-counter" id="reqCounter">0 / 220</div>
+          </div>
+          <div class="request-chip-row" id="requestSuggestionList">
+            <button class="request-chip" type="button" data-req-template="J'aimerais un cours pour revoir les bases de ...">Revoir les bases</button>
+            <button class="request-chip" type="button" data-req-template="J'aimerais un atelier centre sur le taijutsu et les enchainements simples.">Taijutsu</button>
+            <button class="request-chip" type="button" data-req-template="J'aimerais un cours plus theorique pour mieux comprendre ...">Theorie</button>
+            <button class="request-chip" type="button" data-req-template="J'aimerais une revision speciale examen sur ...">Revision examen</button>
+            <button class="request-chip" type="button" data-req-template="J'aimerais un cours plus ludique ou un defi autour de ...">Cours ludique</button>
+          </div>
+          <div class="request-form">
+            <label for="reqName">Ton nom</label>
+            <input type="text" id="reqName" placeholder="Optionnel" maxlength="40">
+            <label for="reqText">Ta demande</label>
+            <textarea id="reqText" placeholder="Ex : J'aimerais un cours pour revoir les esquives et les bases de self-defense." maxlength="220"></textarea>
+            <div class="request-submit-row">
+              <button class="add-btn" onclick="submitCourseRequest()">Envoyer la demande</button>
+              <div class="request-submit-note">Tu peux rester anonyme. Une demande courte et concrete aide vraiment a organiser le planning.</div>
+            </div>
+            <p class="warn-text" id="reqWarn"></p>
+          </div>
+        </section>
+        <section class="request-feed">
+          <div class="request-feed-head">
+            <div>
+              <h3>Idees deja deposees</h3>
+              <p id="requestListMeta">Aucune idee pour le moment.</p>
+            </div>
+            <div class="request-search-block">
+              <label for="requestSearch">Rechercher</label>
+              <input class="request-search" type="search" id="requestSearch" placeholder="Chercher une idee">
+            </div>
+          </div>
+          <div class="request-list" id="requestList"></div>
+        </section>
+      </div>
     </div>
   </div>
 
@@ -1696,23 +1977,79 @@ body.slot-dragging{user-select:none}
 
 <div class="drag-ghost" id="dragGhost" style="display:none"></div>
 <div class="toast" id="toast"></div>
-<div class="request-overlay" id="requestOverlay" onclick="closeRequestDrawer(event)"></div>
-<aside class="request-drawer" id="requestDrawer">
+<aside class="request-drawer" id="requestDrawerLegacy" style="display:none" aria-hidden="true">
   <div class="request-drawer-head">
     <div>
+      <div class="request-head-kicker">Boite a idees eleves</div>
       <h2>Demandes de cours</h2>
-      <p>Laisse une idee de cours ou une envie d'atelier pour aider les professeurs a organiser les prochaines seances.</p>
+      <p>Une envie d'atelier, de revision ou de nouveau theme ? Laisse une idee claire et les professeurs pourront s'en inspirer pour la semaine.</p>
     </div>
     <button class="request-close" onclick="closeRequestDrawer()" aria-label="Fermer les demandes">×</button>
   </div>
   <div class="request-panel">
-    <div class="request-form">
-      <input type="text" id="reqName" placeholder="Ton nom (optionnel)" maxlength="40">
-      <textarea id="reqText" placeholder="Ex : J'aimerais un cours de self-defense, de sabre, de katas..." maxlength="220"></textarea>
-      <button class="add-btn" onclick="submitCourseRequest()">Envoyer la demande</button>
-      <p class="warn-text" id="reqWarn"></p>
-    </div>
-    <div class="request-list" id="requestList"></div>
+    <section class="request-hero">
+      <h3>Une boite simple pour proposer</h3>
+      <p>Le but n'est pas d'ecrire un roman. Une idee nette suffit pour aider les sensei a preparer un cours utile et motivant.</p>
+      <div class="request-hero-grid">
+        <div class="request-hero-stat">
+          <strong id="requestHeroCountLegacy">0</strong>
+          <span>idees deja deposees</span>
+        </div>
+        <div class="request-hero-stat">
+          <strong>Anonyme</strong>
+          <span>ton nom reste optionnel</span>
+        </div>
+        <div class="request-hero-stat">
+          <strong>1 idee claire</strong>
+          <span>plus facile a programmer</span>
+        </div>
+      </div>
+      <div class="request-guidelines">
+        <span class="request-guideline">Un besoin ou un objectif precis</span>
+        <span class="request-guideline">Un theme qui te motive</span>
+        <span class="request-guideline">Une revision que tu aimerais revoir</span>
+      </div>
+    </section>
+    <section class="request-compose">
+      <div class="request-compose-head">
+        <div>
+          <h3>Proposer une idee</h3>
+          <p class="request-compose-note">Tu peux demander un cours technique, un atelier plus fun, une revision d'examen ou un theme lie a ta progression.</p>
+        </div>
+        <div class="request-counter" id="reqCounterLegacy">0 / 220</div>
+      </div>
+      <div class="request-chip-row" id="requestSuggestionListLegacy">
+        <button class="request-chip" type="button" data-req-template="J'aimerais un cours pour revoir les bases de ...">Revoir les bases</button>
+        <button class="request-chip" type="button" data-req-template="J'aimerais un atelier centre sur le taijutsu et les enchainements simples.">Taijutsu</button>
+        <button class="request-chip" type="button" data-req-template="J'aimerais un cours plus theorique pour mieux comprendre ...">Theorie</button>
+        <button class="request-chip" type="button" data-req-template="J'aimerais une revision speciale examen sur ...">Revision examen</button>
+        <button class="request-chip" type="button" data-req-template="J'aimerais un cours plus ludique ou un defi autour de ...">Cours ludique</button>
+      </div>
+      <div class="request-form">
+        <label for="reqName">Ton nom</label>
+        <input type="text" id="reqNameLegacy" placeholder="Optionnel" maxlength="40">
+        <label for="reqText">Ta demande</label>
+        <textarea id="reqTextLegacy" placeholder="Ex : J'aimerais un cours pour revoir les esquives et les bases de self-defense." maxlength="220"></textarea>
+        <div class="request-submit-row">
+          <button class="add-btn" onclick="submitCourseRequest()">Envoyer la demande</button>
+          <div class="request-submit-note">Tu peux rester anonyme. Une demande courte et concrete aide vraiment a organiser le planning.</div>
+        </div>
+        <p class="warn-text" id="reqWarnLegacy"></p>
+      </div>
+    </section>
+    <section class="request-feed">
+      <div class="request-feed-head">
+        <div>
+          <h3>Idees deja deposees</h3>
+          <p id="requestListMetaLegacy">Aucune idee pour le moment.</p>
+        </div>
+        <div class="request-search-block">
+          <label for="requestSearch">Rechercher</label>
+          <input class="request-search" type="search" id="requestSearchLegacy" placeholder="Chercher une idee">
+        </div>
+      </div>
+      <div class="request-list" id="requestListLegacy"></div>
+    </section>
   </div>
 </aside>
 
@@ -2742,6 +3079,7 @@ window.__narumiActiveRuntime='booting';
   let weekMap=normalizeWeekMap(retrieve('weekMap',{}));
   let registrationsData=normalizeRegistrations(retrieve('registrations',{}));
   let requestsData=normalizeRequests(retrieve('requests',{}));
+  let requestSearchQuery='';
   let modalCourseId=null;
   let editingExamId=null;
   let viewCourseRef=null;
@@ -2755,6 +3093,7 @@ window.__narumiActiveRuntime='booting';
   let cloudPresenceRef=null;
   let cloudPresenceConnectedRef=null;
   let presenceCount=0;
+  let examCountdownTimer=null;
   const presenceSessionId=getPresenceSessionId();
 
   if(!studentToken){
@@ -3025,7 +3364,7 @@ window.__narumiActiveRuntime='booting';
     Object.entries(raw).forEach(function(entry){
       const id=entry[0];
       const value=entry[1];
-      const text=String(value&&value.text||'').replace(/\s+/g,' ').trim();
+      const text=String(value&&value.text||'').replace(/\r/g,'').replace(/[ \t]+\n/g,'\n').replace(/\n{3,}/g,'\n\n').trim();
       if(!text)return;
       out[id]={
         id:id,
@@ -3036,6 +3375,35 @@ window.__narumiActiveRuntime='booting';
     });
     return out;
   }
+  function normalizeRequestSearch(value){
+    return String(value||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim();
+  }
+  function updateRequestComposerState(){
+    const textInput=document.getElementById('reqText');
+    const counter=document.getElementById('reqCounter');
+    if(!textInput||!counter)return;
+    const max=Number(textInput.getAttribute('maxlength'))||220;
+    const len=String(textInput.value||'').length;
+    counter.textContent=len+' / '+max;
+    counter.classList.toggle('near-limit',len>=Math.max(1,Math.floor(max*.8)));
+  }
+  window.applyRequestSuggestion=function(template){
+    const textInput=document.getElementById('reqText');
+    const warn=document.getElementById('reqWarn');
+    if(!textInput)return;
+    const max=Number(textInput.getAttribute('maxlength'))||220;
+    const base=String(textInput.value||'').trim();
+    const next=(base?base+'\n'+String(template||''):String(template||'')).slice(0,max);
+    textInput.value=next;
+    if(warn)warn.textContent='';
+    updateRequestComposerState();
+    textInput.focus();
+    textInput.setSelectionRange(textInput.value.length,textInput.value.length);
+  };
+  window.updateRequestSearch=function(value){
+    requestSearchQuery=String(value||'');
+    renderRequests();
+  };
   function fmtLogTime(ts){
     return new Date(ts||Date.now()).toLocaleString('fr-FR',{
       day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'
@@ -3112,22 +3480,21 @@ window.__narumiActiveRuntime='booting';
   function updateRequestCount(){
     const count=requestEntries().length;
     const badge=document.getElementById('requestCount');
+    const tabCount=document.getElementById('requestTabCount');
     if(badge)badge.textContent=String(count);
+    if(tabCount)tabCount.textContent=String(count);
   }
   window.openRequestDrawer=function(){
-    const drawer=document.getElementById('requestDrawer');
-    const overlay=document.getElementById('requestOverlay');
-    if(!drawer||!overlay)return;
-    drawer.classList.add('open');
-    overlay.classList.add('open');
+    switchTab('requests');
+    renderRequests();
+    updateRequestComposerState();
+    setTimeout(function(){
+      const focusTarget=document.getElementById('reqText');
+      if(focusTarget)focusTarget.focus();
+    },90);
   };
   window.closeRequestDrawer=function(ev){
-    if(ev&&ev.target&&ev.target.id!=='requestOverlay')return;
-    const drawer=document.getElementById('requestDrawer');
-    const overlay=document.getElementById('requestOverlay');
-    if(!drawer||!overlay)return;
-    drawer.classList.remove('open');
-    overlay.classList.remove('open');
+    return;
   };
   function fmtRequestTime(ts){
     return new Date(ts||Date.now()).toLocaleString('fr-FR',{
@@ -3347,22 +3714,51 @@ window.__narumiActiveRuntime='booting';
   }
   function renderRequests(){
     const list=document.getElementById('requestList');
+    const meta=document.getElementById('requestListMeta');
+    const heroCount=document.getElementById('requestHeroCount');
+    const search=document.getElementById('requestSearch');
     if(!list)return;
     const entries=requestEntries();
+    const query=normalizeRequestSearch(requestSearchQuery);
+    const filtered=!query?entries:entries.filter(function(entry){
+      return normalizeRequestSearch((entry&&entry.name||'')+' '+(entry&&entry.text||'')).includes(query);
+    });
     updateRequestCount();
+    if(heroCount)heroCount.textContent=String(entries.length);
+    if(search&&search.value!==requestSearchQuery)search.value=requestSearchQuery;
+    if(meta){
+      if(!entries.length)meta.textContent='Aucune idee recue pour le moment.';
+      else if(query)meta.textContent=filtered.length+' sur '+entries.length+' idee(s) visibles';
+      else meta.textContent=entries.length+' idee(s) deja deposee(s)';
+    }
     if(!entries.length){
-      list.innerHTML='<div class="request-empty">Aucune demande pour le moment.</div>';
+      list.innerHTML='<div class="request-empty">Aucune demande pour le moment. Tu peux lancer la premiere idee juste au-dessus.</div>';
       return;
     }
-    list.innerHTML=entries.map(function(entry){
-      return '<div class="request-item">'+
-        '<div class="request-meta">'+
-          '<span class="request-author">'+escapeHtml(entry.name)+'</span>'+
-          '<span class="request-time">'+escapeHtml(fmtRequestTime(entry.createdAt))+'</span>'+
+    if(!filtered.length){
+      list.innerHTML='<div class="request-empty">Aucune demande ne correspond a cette recherche. Essaie un autre mot-cle.</div>';
+      return;
+    }
+    list.innerHTML=filtered.map(function(entry){
+      const displayName=String(entry&&entry.name||'Anonyme').trim()||'Anonyme';
+      const normalizedName=normalizeRequestSearch(displayName);
+      const initial=(displayName.charAt(0)||'?').toUpperCase();
+      return '<article class="request-item">'+
+        '<div class="request-item-head">'+
+          '<div class="request-author-wrap">'+
+            '<div class="request-avatar">'+escapeHtml(initial)+'</div>'+
+            '<div>'+
+              '<div class="request-author-row">'+
+                '<span class="request-author">'+escapeHtml(displayName)+'</span>'+
+                (normalizedName==='anonyme'?'<span class="request-badge">Anonyme</span>':'')+
+              '</div>'+
+              '<div class="request-time">'+escapeHtml(fmtRequestTime(entry.createdAt))+'</div>'+
+            '</div>'+
+          '</div>'+
+          (isAdmin?'<button class="req-btn danger" onclick="deleteCourseRequest(\''+entry.id+'\')">Supprimer</button>':'')+
         '</div>'+
         '<div class="request-body">'+escapeHtml(entry.text)+'</div>'+
-        (isAdmin?'<div class="request-actions"><button class="req-btn" onclick="deleteCourseRequest(\''+entry.id+'\')">Supprimer</button></div>':'')+
-      '</div>';
+      '</article>';
     }).join('');
   }
   function applyRequestsState(data){
@@ -3621,6 +4017,124 @@ window.__narumiActiveRuntime='booting';
       };
     });
   }
+  function nextExamDate(exam,fromDate){
+    if(!exam)return null;
+    const now=fromDate instanceof Date?new Date(fromDate.getTime()):new Date();
+    const weekStart=startOfWeek(now);
+    const target=new Date(weekStart.getTime());
+    target.setDate(target.getDate()+(Number(exam.day)||0));
+    const parts=String(exam.time||'23:00').split(':').map(Number);
+    target.setHours(parts[0]||0,parts[1]||0,0,0);
+    if(target.getTime()<=now.getTime())target.setDate(target.getDate()+7);
+    return target;
+  }
+  function formatExamCountdown(ms){
+    const safe=Math.max(0,Number(ms)||0);
+    const totalMinutes=Math.max(1,Math.ceil(safe/60000));
+    const days=Math.floor(totalMinutes/1440);
+    const hours=Math.floor((totalMinutes%1440)/60);
+    const minutes=totalMinutes%60;
+    const parts=[];
+    if(days)parts.push(days+' j');
+    if(hours)parts.push(hours+' h');
+    if(minutes&&parts.length<2)parts.push(minutes+' min');
+    if(!parts.length)parts.push('1 min');
+    return parts.join(' ');
+  }
+  function examCountdownInfo(exam,fromDate){
+    const now=fromDate instanceof Date?new Date(fromDate.getTime()):new Date();
+    const nextDate=nextExamDate(exam,now);
+    if(!nextDate)return null;
+    const diff=Math.max(0,nextDate.getTime()-now.getTime());
+    const tomorrow=new Date(now.getTime());
+    tomorrow.setDate(tomorrow.getDate()+1);
+    const nextKey=toDateKey(nextDate);
+    const nowKey=toDateKey(now);
+    const tomorrowKey=toDateKey(tomorrow);
+    let dayLabel='';
+    if(nextKey===nowKey)dayLabel='Aujourd\'hui';
+    else if(nextKey===tomorrowKey)dayLabel='Demain';
+    else dayLabel=nextDate.toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long'});
+    return{
+      nextDate:nextDate,
+      diff:diff,
+      countdownLabel:'Dans '+formatExamCountdown(diff),
+      dateLabel:dayLabel+' a '+formatTimeLabel(exam.time),
+      isSoon:diff<24*60*60*1000
+    };
+  }
+  function nextUpcomingExam(items,fromDate){
+    return (Array.isArray(items)?items:[]).reduce(function(best,exam){
+      const info=examCountdownInfo(exam,fromDate);
+      if(!info)return best;
+      if(!best||info.nextDate.getTime()<best.info.nextDate.getTime())return{exam:exam,info:info};
+      return best;
+    },null);
+  }
+  function examCountdownParts(ms){
+    const totalSeconds=Math.max(0,Math.floor((Number(ms)||0)/1000));
+    return{
+      days:Math.floor(totalSeconds/86400),
+      hours:Math.floor((totalSeconds%86400)/3600),
+      minutes:Math.floor((totalSeconds%3600)/60),
+      seconds:totalSeconds%60
+    };
+  }
+  function stopExamCountdownTimer(){
+    if(examCountdownTimer){
+      clearInterval(examCountdownTimer);
+      examCountdownTimer=null;
+    }
+  }
+  function renderExamCountdownWall(fromDate){
+    const host=document.getElementById('examCountdownWall');
+    if(!host)return;
+    const nextExam=nextUpcomingExam(exams,fromDate||new Date());
+    if(!nextExam){
+      host.className='exam-live-wall empty';
+      host.innerHTML='<div><div class="exam-live-kicker">Timer live</div><div class="exam-live-target">Aucun examen programme</div><div class="exam-live-sub">Ajoute une occurrence pour lancer le decompte en direct vers le prochain examen.</div></div>';
+      return;
+    }
+    const parts=examCountdownParts(nextExam.info.diff);
+    const examDayLabel=DAYS[nextExam.exam.day]||'Jour inconnu';
+    const examTimeLabel=formatTimeLabel(nextExam.exam.time);
+    host.className='exam-live-wall';
+    host.innerHTML=
+      '<div class="exam-live-head">'+
+        '<div>'+
+          '<div class="exam-live-kicker">Timer live</div>'+
+          '<div class="exam-live-target">'+escapeHtml(nextExam.exam.type)+'</div>'+
+          '<div class="exam-live-sub">Prochain examen recurrent dans le planning. Le compteur se met a jour seconde par seconde.</div>'+
+          '<div class="exam-live-meta">'+
+            '<span class="exam-live-chip">&#128197; '+escapeHtml(examDayLabel)+'</span>'+
+            '<span class="exam-live-chip">&#128339; '+escapeHtml(examTimeLabel)+'</span>'+
+          '</div>'+
+        '</div>'+
+        '<div class="exam-live-pulse" aria-hidden="true"></div>'+
+      '</div>'+
+      '<div class="exam-live-clock">'+
+        '<div class="exam-live-unit"><span class="exam-live-value">'+pad2(parts.days)+'</span><span class="exam-live-label">Jours</span></div>'+
+        '<div class="exam-live-unit"><span class="exam-live-value">'+pad2(parts.hours)+'</span><span class="exam-live-label">Heures</span></div>'+
+        '<div class="exam-live-unit"><span class="exam-live-value">'+pad2(parts.minutes)+'</span><span class="exam-live-label">Minutes</span></div>'+
+        '<div class="exam-live-unit seconds"><span class="exam-live-value">'+pad2(parts.seconds)+'</span><span class="exam-live-label">Secondes</span></div>'+
+      '</div>'+
+      '<div class="exam-live-footer">'+
+        '<span>Prochaine occurrence</span>'+
+        '<span class="exam-live-date">'+escapeHtml(nextExam.info.dateLabel)+'</span>'+
+      '</div>';
+  }
+  function startExamCountdownTimer(){
+    stopExamCountdownTimer();
+    renderExamCountdownWall(new Date());
+    if(activeTab!=='exams')return;
+    examCountdownTimer=setInterval(function(){
+      if(activeTab!=='exams'){
+        stopExamCountdownTimer();
+        return;
+      }
+      renderExamCountdownWall(new Date());
+    },1000);
+  }
   function renderExamSummary(){
     const host=document.getElementById('examSummary');
     if(!host)return;
@@ -3633,12 +4147,14 @@ window.__narumiActiveRuntime='booting';
       '<div class="exam-stat-card"><div class="exam-stat-value">'+exams.length+'</div><div class="exam-stat-label">Occurrences</div></div>'+
       '<div class="exam-stat-card"><div class="exam-stat-value">'+new Set(exams.map(function(exam){return exam.type;})).size+'</div><div class="exam-stat-label">Types actifs</div></div>'+
       '<div class="exam-stat-card"><div class="exam-stat-value">'+escapeHtml(topDay)+'</div><div class="exam-stat-label">Jour phare</div></div>';
+    startExamCountdownTimer();
   }
   function renderExamPreview(){
     const host=document.getElementById('examPreview');
     if(!host)return;
     const state=currentExamFormState();
     const timeLabel=formatTimeLabel(state.time||'23:00');
+    const previewInfo=examCountdownInfo(state,new Date());
     host.innerHTML=
       '<div class="exam-preview-card">'+
         '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px">'+
@@ -3646,6 +4162,7 @@ window.__narumiActiveRuntime='booting';
           '<div class="exam-badge">🕒 '+escapeHtml(timeLabel)+'</div>'+
         '</div>'+
         '<div class="exam-item-title">'+escapeHtml(state.type||EXAM_TYPES[0])+'</div>'+
+        (previewInfo?'<div class="exam-item-meta exam-item-countdown">&#9203; '+escapeHtml(previewInfo.countdownLabel)+' - '+escapeHtml(previewInfo.dateLabel)+'</div>':'')+
         '<div class="exam-item-meta">🗓️ '+escapeHtml(DAYS[state.day]||DAYS[5])+' à '+escapeHtml(timeLabel)+'</div>'+
         '<div class="exam-item-meta" style="margin-top:6px">💮 Cet examen sera visible sur toutes les semaines du planning, avec un rendu mis en avant dans la grille.</div>'+
       '</div>';
@@ -3684,16 +4201,21 @@ window.__narumiActiveRuntime='booting';
       host.innerHTML='<div class="exam-empty-card">Aucun examen programme pour le moment. Ajoute une occurrence a droite pour la voir apparaitre ici avec sa timeline par type.</div>';
       return;
     }
+    const now=new Date();
     host.innerHTML=examsByType().map(function(group){
       const first=group.items[0];
+      const nextGroupExam=nextUpcomingExam(group.items,now);
       const safeType=group.type.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
       return '<article class="exam-item">'+
         '<div class="exam-item-head"><span class="exam-badge">🎯 '+group.items.length+' occurrence'+(group.items.length>1?'s':'')+'</span><span class="exam-badge">🕒 '+escapeHtml(formatTimeLabel(first.time))+'</span></div>'+
         '<div class="exam-item-title">'+escapeHtml(group.type)+'</div>'+
+        (nextGroupExam?'<div class="exam-item-meta exam-item-countdown">&#9203; Prochaine occurrence : '+escapeHtml(nextGroupExam.info.countdownLabel)+' - '+escapeHtml(nextGroupExam.info.dateLabel)+'</div>':'')+
         '<div class="exam-item-meta">📛 Programme en recurrence sur toutes les semaines. Tu peux empiler plusieurs horaires pour ce meme type.</div>'+
         '<div class="exam-occurrences">'+group.items.map(function(exam){
+          const info=examCountdownInfo(exam,now);
           return '<div class="exam-occurrence">'+
             '<div class="exam-occurrence-meta">'+
+              (info?'<div class="exam-occurrence-countdown'+(info.isSoon?' soon':'')+'">&#9203; '+escapeHtml(info.countdownLabel)+' - '+escapeHtml(info.dateLabel)+'</div>':'')+
               '<div class="exam-occurrence-day">🗓️ '+escapeHtml(DAYS[exam.day])+'</div>'+
               '<div class="exam-occurrence-time">🕒 '+escapeHtml(formatTimeLabel(exam.time))+'</div>'+
             '</div>'+
@@ -4416,8 +4938,9 @@ window.__narumiActiveRuntime='booting';
 
   window.switchTab=function(name){
     activeTab=name||'schedule';
+    if(activeTab!=='exams')stopExamCountdownTimer();
     document.querySelectorAll('.tab').forEach(function(btn){btn.classList.remove('active');});
-    ['schedule','exams','slots','types','stats','profiles','admin'].forEach(function(tabName){
+    ['schedule','exams','slots','types','stats','profiles','requests','admin'].forEach(function(tabName){
       const el=document.getElementById('tab'+tabName[0].toUpperCase()+tabName.slice(1));
       if(el)el.style.display=tabName===activeTab?'':'none';
     });
@@ -4429,6 +4952,7 @@ window.__narumiActiveRuntime='booting';
     if(activeTab==='schedule')renderStats();
     if(activeTab==='stats')renderDetailedStats();
     if(activeTab==='profiles')renderProfiles();
+    if(activeTab==='requests')renderRequests();
     if(activeTab==='admin')renderAdminLogs();
   };
 
@@ -5290,8 +5814,8 @@ if(clipboard){
     const nameInput=document.getElementById('reqName');
     const textInput=document.getElementById('reqText');
     const warn=document.getElementById('reqWarn');
-    const name=String(nameInput.value||'').trim()||'Anonyme';
-    const text=String(textInput.value||'').replace(/\s+/g,' ').trim();
+    const name=String(nameInput.value||'').replace(/\s+/g,' ').trim()||'Anonyme';
+    const text=String(textInput.value||'').replace(/\r/g,'').replace(/[ \t]+\n/g,'\n').replace(/\n{3,}/g,'\n\n').trim();
     if(text.length<6){
       warn.textContent='Decris un peu plus la demande.';
       return;
@@ -5320,6 +5844,11 @@ if(clipboard){
     }
     nameInput.value='';
     textInput.value='';
+    requestSearchQuery='';
+    if(document.getElementById('requestSearch'))document.getElementById('requestSearch').value='';
+    warn.textContent='';
+    updateRequestComposerState();
+    renderRequests();
     showToast('Demande envoyee !');
   };
 
@@ -5681,6 +6210,7 @@ if(clipboard){
 
   window.switchTab=function(name){
     activeTab=name||'schedule';
+    if(activeTab!=='exams')stopExamCountdownTimer();
     document.querySelectorAll('.tab').forEach(function(btn){btn.classList.remove('active');});
     ['schedule','exams','slots','types','stats','profiles','admin'].forEach(function(tabName){
       const el=document.getElementById('tab'+tabName[0].toUpperCase()+tabName.slice(1));
@@ -6206,6 +6736,107 @@ if(clipboard){
     }
   };
 
+  window.updateAuthUI=function(){
+    const badge=document.getElementById('authBadge');
+    const tabBar=document.getElementById('tabBar');
+    const previousSession=adminSessionActive;
+    if(isAdmin||hasAdminSession())adminSessionActive=true;
+    else if(!viewerPreview)adminSessionActive=false;
+    if(adminSessionActive&&!previousSession)viewerPreview=false;
+    setPreviewState(viewerPreview);
+    const scheduleTab='<button class="tab" data-tab="schedule" onclick="switchTab(\'schedule\')">ðŸ“… Emploi du temps</button>';
+    const examsTab='<button class="tab" data-tab="exams" onclick="switchTab(\'exams\')">ðŸŽ¯ Examens</button>';
+    const slotsTab='<button class="tab" data-tab="slots" onclick="switchTab(\'slots\')">ðŸ• CrÃ©neaux horaires</button>';
+    const typesTab='<button class="tab" data-tab="types" onclick="switchTab(\'types\')">âš¡ Types de cours</button>';
+    const statsTab='<button class="tab" data-tab="stats" onclick="switchTab(\'stats\')">ðŸ“Š Statistiques</button>';
+    const profilesTab='<button class="tab" data-tab="profiles" onclick="switchTab(\'profiles\')">ðŸ‘¨â€ðŸ« Professeurs</button>';
+    const requestsTab='<button class="tab" data-tab="requests" onclick="switchTab(\'requests\')">ðŸ’¬ Demandes <span class="tab-counter" id="requestTabCount">0</span></button>';
+    const adminTab='<button class="tab" data-tab="admin" onclick="switchTab(\'admin\')">âš™ï¸ Admin</button>';
+    if(isAdmin){
+      badge.innerHTML='<div class="admin-badge" onclick="switchTab(\'admin\')">âš¡ Sensei</div>';
+      tabBar.innerHTML=[scheduleTab,examsTab,slotsTab,typesTab,statsTab,profilesTab,requestsTab,adminTab].join('');
+    }else if(adminSessionActive&&viewerPreview){
+      badge.innerHTML='<div class="viewer-badge" onclick="switchTab(\'schedule\')">Apercu eleve</div>';
+      tabBar.innerHTML=[scheduleTab,profilesTab,requestsTab,adminTab].join('');
+    }else{
+      badge.innerHTML='<div class="viewer-badge" onclick="openLoginOverlay()">ðŸ”’ Visiteur</div>';
+      tabBar.innerHTML=[scheduleTab,profilesTab,requestsTab].join('');
+    }
+    if(!['schedule','exams','slots','types','stats','profiles','requests','admin'].includes(activeTab))activeTab='schedule';
+    if(!isAdmin&&activeTab!=='schedule'&&activeTab!=='profiles'&&activeTab!=='requests')activeTab='schedule';
+    switchTab(activeTab);
+    updateRequestCount();
+    if(adminSessionActive&&!previousSession)addAdminLog('Connexion admin','Session admin ouverte.');
+    if(!adminSessionActive&&previousSession)addAdminLog('Deconnexion','Session admin fermee.');
+    renderRequests();
+    if(hasAdminSession()&&cloudScheduleNeedsIds){
+      cloudScheduleNeedsIds=false;
+      pushCloudState({silent:true});
+    }
+  };
+
+  window.switchTab=function(name){
+    activeTab=name||'schedule';
+    if(activeTab!=='exams')stopExamCountdownTimer();
+    document.querySelectorAll('.tab').forEach(function(btn){btn.classList.remove('active');});
+    ['schedule','exams','slots','types','stats','profiles','requests','admin'].forEach(function(tabName){
+      const el=document.getElementById('tab'+tabName[0].toUpperCase()+tabName.slice(1));
+      if(el)el.style.display=tabName===activeTab?'':'none';
+    });
+    const tab=document.querySelector('.tab[data-tab="'+activeTab+'"]');
+    if(tab)tab.classList.add('active');
+    if(activeTab==='exams')renderExamList();
+    if(activeTab==='slots')renderSlotList();
+    if(activeTab==='types')renderTypeList();
+    if(activeTab==='schedule')renderStats();
+    if(activeTab==='stats')renderDetailedStats();
+    if(activeTab==='profiles')renderProfiles();
+    if(activeTab==='requests'){
+      renderRequests();
+      updateRequestComposerState();
+    }
+    if(activeTab==='admin')renderAdminLogs();
+  };
+
+  window.updateAuthUI=function(){
+    const badge=document.getElementById('authBadge');
+    const tabBar=document.getElementById('tabBar');
+    const previousSession=adminSessionActive;
+    if(isAdmin||hasAdminSession())adminSessionActive=true;
+    else if(!viewerPreview)adminSessionActive=false;
+    if(adminSessionActive&&!previousSession)viewerPreview=false;
+    setPreviewState(viewerPreview);
+    const scheduleTab='<button class="tab" data-tab="schedule" onclick="switchTab(\'schedule\')">&#128197; Emploi du temps</button>';
+    const examsTab='<button class="tab" data-tab="exams" onclick="switchTab(\'exams\')">&#127919; Examens</button>';
+    const slotsTab='<button class="tab" data-tab="slots" onclick="switchTab(\'slots\')">&#128337; Cr&eacute;neaux horaires</button>';
+    const typesTab='<button class="tab" data-tab="types" onclick="switchTab(\'types\')">&#9889; Types de cours</button>';
+    const statsTab='<button class="tab" data-tab="stats" onclick="switchTab(\'stats\')">&#128202; Statistiques</button>';
+    const profilesTab='<button class="tab" data-tab="profiles" onclick="switchTab(\'profiles\')">&#128105;&#8205;&#127979; Professeurs</button>';
+    const requestsTab='<button class="tab" data-tab="requests" onclick="switchTab(\'requests\')">&#128172; Demandes <span class="tab-counter" id="requestTabCount">0</span></button>';
+    const adminTab='<button class="tab" data-tab="admin" onclick="switchTab(\'admin\')">&#9881;&#65039; Admin</button>';
+    if(isAdmin){
+      badge.innerHTML='<div class="admin-badge" onclick="switchTab(\'admin\')">&#9889; Sensei</div>';
+      tabBar.innerHTML=[scheduleTab,examsTab,slotsTab,typesTab,statsTab,profilesTab,requestsTab,adminTab].join('');
+    }else if(adminSessionActive&&viewerPreview){
+      badge.innerHTML='<div class="viewer-badge" onclick="switchTab(\'schedule\')">Apercu eleve</div>';
+      tabBar.innerHTML=[scheduleTab,profilesTab,requestsTab,adminTab].join('');
+    }else{
+      badge.innerHTML='<div class="viewer-badge" onclick="openLoginOverlay()">&#128274; Visiteur</div>';
+      tabBar.innerHTML=[scheduleTab,profilesTab,requestsTab].join('');
+    }
+    if(!['schedule','exams','slots','types','stats','profiles','requests','admin'].includes(activeTab))activeTab='schedule';
+    if(!isAdmin&&activeTab!=='schedule'&&activeTab!=='profiles'&&activeTab!=='requests')activeTab='schedule';
+    switchTab(activeTab);
+    updateRequestCount();
+    if(adminSessionActive&&!previousSession)addAdminLog('Connexion admin','Session admin ouverte.');
+    if(!adminSessionActive&&previousSession)addAdminLog('Deconnexion','Session admin fermee.');
+    renderRequests();
+    if(hasAdminSession()&&cloudScheduleNeedsIds){
+      cloudScheduleNeedsIds=false;
+      pushCloudState({silent:true});
+    }
+  };
+
   function bindEnhancements(){
     const picker=document.getElementById('weekPicker');
     const label=document.getElementById('wkLabel');
@@ -6244,6 +6875,21 @@ if(clipboard){
     });
     document.getElementById('vRegName').addEventListener('keydown',function(ev){
       if(ev.key==='Enter')submitRegistration();
+    });
+    document.getElementById('reqText').addEventListener('input',updateRequestComposerState);
+    document.getElementById('reqText').addEventListener('keydown',function(ev){
+      if((ev.ctrlKey||ev.metaKey)&&ev.key==='Enter'){
+        ev.preventDefault();
+        submitCourseRequest();
+      }
+    });
+    document.getElementById('requestSearch').addEventListener('input',function(ev){
+      updateRequestSearch(ev.target.value);
+    });
+    document.querySelectorAll('#requestSuggestionList [data-req-template]').forEach(function(button){
+      button.addEventListener('click',function(){
+        applyRequestSuggestion(button.getAttribute('data-req-template'));
+      });
     });
     document.getElementById('teacherCropZoom').addEventListener('input',function(ev){
       if(!teacherCropState.open)return;
@@ -6343,6 +6989,7 @@ if(clipboard){
   renderExamList();
   renderAdminLogs();
   renderRequests();
+  updateRequestComposerState();
   render();
   window.__narumiEnhancedBooted=true;
   updatePresenceBadge(0,false);
