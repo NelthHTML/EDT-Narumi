@@ -374,6 +374,27 @@ body::after{
   background:rgba(255,120,120,.07);border-color:rgba(255,120,120,.2);color:#ffb4b4;
 }
 .req-btn.danger:hover{background:rgba(255,120,120,.12)}
+.req-btn.reply{
+  background:rgba(150,170,245,.08);border-color:rgba(150,170,245,.25);color:#c5cff7;
+}
+.req-btn.reply:hover,.req-btn.reply.active{background:rgba(150,170,245,.16);border-color:rgba(150,170,245,.4)}
+.request-reply{
+  margin-top:10px;padding:10px 13px;border-radius:10px;
+  background:rgba(245,200,66,.05);border:1px solid rgba(245,200,66,.18);
+}
+.request-reply-label{
+  font-size:10px;font-weight:700;letter-spacing:.7px;text-transform:uppercase;
+  color:var(--gold);opacity:.75;margin-bottom:5px;
+}
+.request-reply-text{font-size:13px;color:var(--text);line-height:1.55;white-space:pre-wrap;word-break:break-word}
+.request-reply-form{margin-top:10px;display:flex;flex-direction:column;gap:7px}
+.req-reply-input{
+  background:rgba(255,255,255,.05);border:1px solid rgba(245,200,66,.22);
+  border-radius:10px;color:var(--text);font-family:var(--font);font-size:13px;
+  padding:9px 11px;resize:vertical;min-height:64px;width:100%;box-sizing:border-box;line-height:1.5;
+}
+.req-reply-input:focus{border-color:rgba(245,200,66,.5);outline:none}
+.req-reply-actions{display:flex;gap:6px;justify-content:flex-end}
 .request-empty{
   border:1px dashed rgba(245,200,66,.18);border-radius:16px;padding:18px;background:rgba(255,255,255,.02);
   font-size:13px;color:var(--text2);line-height:1.55;text-align:center;
@@ -3140,6 +3161,7 @@ window.__narumiActiveRuntime='booting';
   let adminLogs=normalizeAdminLogs(retrieve('adminLogs',[]));
   let adminSessionActive=!!isAdmin;
   let viewerPreview=false;
+  let openReplyForms=new Set();
   let cloudScheduleNeedsIds=false;
   let cloudPresenceBound=false;
   let cloudPresenceRef=null;
@@ -3424,7 +3446,8 @@ window.__narumiActiveRuntime='booting';
         text:text,
         createdAt:Number(value&&value.createdAt)||Date.now(),
         status:normalizeRequestStatus(value&&value.status),
-        reviewedAt:Number(value&&value.reviewedAt)||0
+        reviewedAt:Number(value&&value.reviewedAt)||0,
+        reply:String(value&&value.reply||'').trim()
       };
     });
     return out;
@@ -3819,6 +3842,23 @@ window.__narumiActiveRuntime='booting';
       const decisionText=entry&&entry.reviewedAt&&statusMeta.key!=='pending'
         ?'<div class="request-decision">Decision prise le '+escapeHtml(fmtRequestTime(entry.reviewedAt))+'</div>'
         :'';
+      const hasReply=!!(entry&&entry.reply);
+      const replyOpen=openReplyForms.has(entry.id);
+      const replyDisplay=hasReply
+        ?'<div class="request-reply">'+
+            '<div class="request-reply-label">&#128221; Réponse du Sensei</div>'+
+            '<div class="request-reply-text">'+escapeHtml(entry.reply)+'</div>'+
+          '</div>'
+        :'';
+      const replyForm=isAdmin&&replyOpen
+        ?'<div class="request-reply-form">'+
+            '<textarea class="req-reply-input" id="reply-input-'+entry.id+'" placeholder="Écrire une réponse au ninja...">'+escapeHtml(entry.reply||'')+'</textarea>'+
+            '<div class="req-reply-actions">'+
+              '<button class="req-btn" onclick="toggleReplyForm(\''+entry.id+'\')">Annuler</button>'+
+              '<button class="req-btn success" onclick="sendReply(\''+entry.id+'\')">Envoyer</button>'+
+            '</div>'+
+          '</div>'
+        :'';
       return '<article class="request-item '+statusMeta.key+'">'+
         '<div class="request-item-head">'+
           '<div class="request-author-wrap">'+
@@ -3835,11 +3875,14 @@ window.__narumiActiveRuntime='booting';
         '</div>'+
         '<div class="request-body">'+escapeHtml(entry.text)+'</div>'+
         decisionText+
+        replyDisplay+
         (isAdmin?'<div class="request-actions">'+
           '<button class="req-btn success'+(statusMeta.key==='approved'?' active':'')+'" onclick="setCourseRequestStatus(\''+entry.id+'\',\'approved\')">Valider</button>'+
           '<button class="req-btn reject'+(statusMeta.key==='rejected'?' active':'')+'" onclick="setCourseRequestStatus(\''+entry.id+'\',\'rejected\')">Refuser</button>'+
+          '<button class="req-btn reply'+(replyOpen?' active':'')+'" onclick="toggleReplyForm(\''+entry.id+'\')">'+(hasReply?'&#9998; Modifier':'&#128172; Répondre')+'</button>'+
           '<button class="req-btn danger" onclick="deleteCourseRequest(\''+entry.id+'\')">Supprimer</button>'+
         '</div>':'')+
+        replyForm+
       '</article>';
     }).join('');
   }
@@ -5997,6 +6040,49 @@ if(clipboard){
       }
     }
     showToast('Demande supprimee.');
+  };
+
+  window.toggleReplyForm=function(requestId){
+    if(openReplyForms.has(requestId))openReplyForms.delete(requestId);
+    else openReplyForms.add(requestId);
+    renderRequests();
+    if(openReplyForms.has(requestId)){
+      setTimeout(function(){
+        const input=document.getElementById('reply-input-'+requestId);
+        if(input){input.focus();input.setSelectionRange(input.value.length,input.value.length);}
+      },30);
+    }
+  };
+
+  window.sendReply=async function(requestId){
+    if(!isAdmin||!requestId)return;
+    const input=document.getElementById('reply-input-'+requestId);
+    if(!input)return;
+    const reply=input.value.trim();
+    const current=requestsData[requestId];
+    if(!current)return;
+    const previous=Object.assign({},current);
+    const next=Object.assign({},current,{reply:reply});
+    requestsData[requestId]=next;
+    persist('requests',requestsData);
+    syncSharedVars();
+    openReplyForms.delete(requestId);
+    renderRequests();
+    if(cloudEnabled&&cloudRequestsRef){
+      try{
+        await cloudRequestsRef.child(requestId).set(next);
+      }catch(err){
+        console.error(err);
+        requestsData[requestId]=previous;
+        persist('requests',requestsData);
+        syncSharedVars();
+        renderRequests();
+        showToast('Reponse non synchronisee.');
+        return;
+      }
+    }
+    addAdminLog('Reponse a une demande','Reponse '+(reply?'envoyee':'effacee')+' pour la demande de "'+String(current.name||'Anonyme')+'".');
+    showToast(reply?'Reponse envoyee !':'Reponse supprimee.');
   };
 
   window.submitRegistration=async function(){
