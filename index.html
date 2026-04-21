@@ -6984,7 +6984,7 @@ if(clipboard){
     showToast('Parchemin sauvegarde !');
   }
 
-  function openLoginOverlay(){
+  window.openLoginOverlay=function openLoginOverlay(){
     if(cloudEnabled&&CLOUD_CONFIG.adminEmail)document.getElementById('loginEmail').value=CLOUD_CONFIG.adminEmail;
     document.getElementById('loginPwd').value='';
     document.getElementById('loginErr').textContent='';
@@ -6993,7 +6993,7 @@ if(clipboard){
     setTimeout(function(){focusTarget.focus();},50);
   }
 
-  async function doLogin(){
+  window.doLogin=async function doLogin(){
     const err=document.getElementById('loginErr');
     const pwd=document.getElementById('loginPwd').value;
     if(cloudEnabled){
