@@ -3508,6 +3508,8 @@ window.__narumiActiveRuntime='booting';
     }).join('');
   }
   function setPreviewState(next){
+    const canAdmin=cloudEnabled?hasAdminSession():(!!adminSessionActive||!!isAdmin);
+    adminSessionActive=!!canAdmin;
     viewerPreview=!!next&&adminSessionActive;
     isAdmin=adminSessionActive&&!viewerPreview;
     const btn=document.getElementById('previewToggleAdminBtn');
@@ -5056,8 +5058,9 @@ window.__narumiActiveRuntime='booting';
     const badge=document.getElementById('authBadge');
     const tabBar=document.getElementById('tabBar');
     const previousSession=adminSessionActive;
-    if(isAdmin||hasAdminSession())adminSessionActive=true;
-    else if(!viewerPreview)adminSessionActive=false;
+    const effectiveAdmin=cloudEnabled?hasAdminSession():(!!adminSessionActive||!!isAdmin);
+    adminSessionActive=!!effectiveAdmin;
+    if(!adminSessionActive)viewerPreview=false;
     if(adminSessionActive&&!previousSession)viewerPreview=false;
     setPreviewState(viewerPreview);
     const base=[
@@ -6358,8 +6361,9 @@ if(clipboard){
     const badge=document.getElementById('authBadge');
     const tabBar=document.getElementById('tabBar');
     const previousSession=adminSessionActive;
-    if(isAdmin||hasAdminSession())adminSessionActive=true;
-    else if(!viewerPreview)adminSessionActive=false;
+    const effectiveAdmin=cloudEnabled?hasAdminSession():(!!adminSessionActive||!!isAdmin);
+    adminSessionActive=!!effectiveAdmin;
+    if(!adminSessionActive)viewerPreview=false;
     if(adminSessionActive&&!previousSession)viewerPreview=false;
     setPreviewState(viewerPreview);
     const base=[
@@ -6930,8 +6934,9 @@ if(clipboard){
     const badge=document.getElementById('authBadge');
     const tabBar=document.getElementById('tabBar');
     const previousSession=adminSessionActive;
-    if(isAdmin||hasAdminSession())adminSessionActive=true;
-    else if(!viewerPreview)adminSessionActive=false;
+    const effectiveAdmin=cloudEnabled?hasAdminSession():(!!adminSessionActive||!!isAdmin);
+    adminSessionActive=!!effectiveAdmin;
+    if(!adminSessionActive)viewerPreview=false;
     if(adminSessionActive&&!previousSession)viewerPreview=false;
     setPreviewState(viewerPreview);
     const scheduleTab='<button class="tab" data-tab="schedule" onclick="switchTab(\'schedule\')">&#128197; Emploi du temps</button>';
@@ -6942,7 +6947,7 @@ if(clipboard){
     const profilesTab='<button class="tab" data-tab="profiles" onclick="switchTab(\'profiles\')">&#128105;&#8205;&#127979; Professeurs</button>';
     const requestsTab='<button class="tab" data-tab="requests" onclick="switchTab(\'requests\')">&#128172; Demandes <span class="tab-counter" id="requestTabCount">0</span></button>';
     const adminTab='<button class="tab" data-tab="admin" onclick="switchTab(\'admin\')">&#9881;&#65039; Admin</button>';
-    if(isAdmin){
+    if(adminSessionActive&&!viewerPreview){
       badge.innerHTML='<div class="admin-badge" onclick="switchTab(\'admin\')">&#9889; Sensei</div>';
       tabBar.innerHTML=[scheduleTab,examsTab,slotsTab,typesTab,statsTab,profilesTab,requestsTab,adminTab].join('');
     }else if(adminSessionActive&&viewerPreview){
@@ -6953,7 +6958,7 @@ if(clipboard){
       tabBar.innerHTML=[scheduleTab,examsTab,profilesTab,requestsTab].join('');
     }
     if(!['schedule','exams','slots','types','stats','profiles','requests','admin'].includes(activeTab))activeTab='schedule';
-    if(!isAdmin&&activeTab!=='schedule'&&activeTab!=='exams'&&activeTab!=='profiles'&&activeTab!=='requests')activeTab='schedule';
+    if(!(adminSessionActive&&!viewerPreview)&&activeTab!=='schedule'&&activeTab!=='exams'&&activeTab!=='profiles'&&activeTab!=='requests')activeTab='schedule';
     switchTab(activeTab);
     updateRequestCount();
     if(adminSessionActive&&!previousSession)addAdminLog('Connexion admin','Session admin ouverte.');
